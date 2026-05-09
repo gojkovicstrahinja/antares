@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { MapPin, Search, Car, Clock, Users, ChevronRight, Bell, Navigation } from 'lucide-react-native';
+import { Search, Car, Clock, Users, ChevronRight, Bell, Navigation, ArrowRight, X } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useRideStore } from '@/stores/rideStore';
@@ -25,6 +25,8 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<'putnik' | 'vozac'>('putnik');
   const [polaziste, setPolaziste] = useState('');
   const [odrediste, setOdrediste] = useState('');
+  const [expanded, setExpanded] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const goToSearch = (params: { polaziste?: string; odrediste?: string }) => {
     setSearchParams({
@@ -35,8 +37,12 @@ export default function HomeScreen() {
   };
 
   const handleSearch = () => {
-    if (!polaziste || !odrediste) return;
+    if (!polaziste && !odrediste) return;
     goToSearch({ polaziste, odrediste });
+  };
+
+  const handleCollapse = () => {
+    setExpanded(false);
   };
 
   const avatarUrl = profile
@@ -61,8 +67,12 @@ export default function HomeScreen() {
             <Text style={styles.greetingName}>{profile?.ime ?? 'Dobrodošli'}</Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconBtn} accessibilityLabel="Notifikacije">
-              <Bell size={18} stroke={Colors.text} />
+            <TouchableOpacity
+              style={[styles.iconBtn, showNotifications && styles.iconBtnActive]}
+              onPress={() => setShowNotifications((v) => !v)}
+              accessibilityLabel="Notifikacije"
+            >
+              <Bell size={18} stroke={showNotifications ? Colors.accent : Colors.text} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.avatarBtn}>
               {avatarUrl ? (
@@ -77,6 +87,22 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Notifications panel */}
+        {showNotifications && (
+          <View style={styles.notifPanel}>
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifTitle}>Obaveštenja</Text>
+              <TouchableOpacity onPress={() => setShowNotifications(false)} hitSlop={8}>
+                <X size={18} stroke={Colors.gray400} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.notifEmpty}>
+              <Bell size={32} stroke={Colors.gray700} strokeWidth={1.5} />
+              <Text style={styles.notifEmptyText}>Nema novih obaveštenja</Text>
+            </View>
+          </View>
+        )}
 
         {/* Mode Toggle */}
         <View style={styles.modeToggle}>
@@ -102,52 +128,100 @@ export default function HomeScreen() {
         </View>
 
         {/* Where To Card */}
-        <View style={styles.whereToCard}>
+        {!expanded ? (
           <TouchableOpacity
-            style={styles.whereToInner}
-            onPress={() => router.push('/(tabs)/search')}
+            style={styles.whereToCard}
+            onPress={() => setExpanded(true)}
             activeOpacity={0.9}
           >
-            <View style={styles.whereToRow}>
-              <View style={styles.dotStart} />
-              <View style={styles.whereToRowContent}>
-                <Text style={styles.whereToLabel}>POLAZIŠTE</Text>
-                <Text style={styles.whereToCity}>{polaziste || 'Beograd'}</Text>
+            <View style={styles.whereToInner}>
+              <View style={styles.whereToRow}>
+                <View style={styles.dotStart} />
+                <View style={styles.whereToRowContent}>
+                  <Text style={styles.whereToLabel}>POLAZIŠTE</Text>
+                  <Text style={[styles.whereToCity, !polaziste && styles.whereToCityPlaceholder]}>
+                    {polaziste || 'Odakle putuješ?'}
+                  </Text>
+                </View>
+                <Navigation size={16} stroke={Colors.gray400} />
               </View>
-              <Navigation size={16} stroke={Colors.gray400} />
+              <View style={styles.whereToDivider} />
+              <View style={styles.whereToRow}>
+                <View style={styles.dotEnd} />
+                <View style={styles.whereToRowContent}>
+                  <Text style={styles.whereToLabel}>ODREDIŠTE</Text>
+                  <Text style={[styles.whereToCity, !odrediste && styles.whereToCityPlaceholder]}>
+                    {odrediste || 'Kuda putuješ?'}
+                  </Text>
+                </View>
+                <ChevronRight size={16} stroke={Colors.text} />
+              </View>
             </View>
-            <View style={styles.whereToDivider} />
-            <View style={styles.whereToRow}>
-              <View style={styles.dotEnd} />
-              <View style={styles.whereToRowContent}>
-                <Text style={styles.whereToLabel}>ODREDIŠTE</Text>
-                <Text style={[styles.whereToCity, !odrediste && styles.whereToCityPlaceholder]}>
-                  {odrediste || 'Kuda putuješ?'}
-                </Text>
+            <View style={styles.metaTiles}>
+              <View style={styles.metaTile}>
+                <Clock size={14} stroke={Colors.textDim} />
+                <View>
+                  <Text style={styles.metaTileLabel}>POLAZAK</Text>
+                  <Text style={styles.metaTileValue}>Danas</Text>
+                </View>
               </View>
-              <ChevronRight size={16} stroke={Colors.text} />
+              <View style={styles.metaTileDivider} />
+              <View style={styles.metaTile}>
+                <Users size={14} stroke={Colors.textDim} />
+                <View>
+                  <Text style={styles.metaTileLabel}>PUTNIKA</Text>
+                  <Text style={styles.metaTileValue}>1 osoba</Text>
+                </View>
+              </View>
             </View>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.searchForm}>
+            <View style={styles.searchFormHeader}>
+              <Text style={styles.searchFormTitle}>Pronađi vožnju</Text>
+              <TouchableOpacity onPress={handleCollapse} hitSlop={8}>
+                <X size={20} stroke={Colors.gray400} />
+              </TouchableOpacity>
+            </View>
 
-          {/* Date + Passengers */}
-          <View style={styles.metaTiles}>
-            <View style={styles.metaTile}>
-              <Clock size={14} stroke={Colors.textDim} />
-              <View>
-                <Text style={styles.metaTileLabel}>POLAZAK</Text>
-                <Text style={styles.metaTileValue}>Danas</Text>
+            <View style={styles.routeInputs}>
+              <View style={styles.routeDots}>
+                <View style={styles.dotStart} />
+                <View style={styles.routeLine} />
+                <View style={styles.dotEnd} />
+              </View>
+              <View style={styles.routeFields}>
+                <CityAutocomplete
+                  value={polaziste}
+                  onSelect={setPolaziste}
+                  placeholder="Odakle?"
+                />
+                <View style={styles.inputSpacer} />
+                <CityAutocomplete
+                  value={odrediste}
+                  onSelect={setOdrediste}
+                  placeholder="Kuda?"
+                />
               </View>
             </View>
-            <View style={styles.metaTileDivider} />
-            <View style={styles.metaTile}>
-              <Users size={14} stroke={Colors.textDim} />
-              <View>
-                <Text style={styles.metaTileLabel}>PUTNIKA</Text>
-                <Text style={styles.metaTileValue}>1 osoba</Text>
-              </View>
-            </View>
+
+            {(polaziste || odrediste) && (
+              <TouchableOpacity
+                style={styles.searchSubmitBtn}
+                onPress={handleSearch}
+                activeOpacity={0.85}
+              >
+                <Search size={18} stroke={Colors.black} strokeWidth={2.4} />
+                <Text style={styles.searchSubmitText}>
+                  {polaziste && odrediste
+                    ? `${polaziste} → ${odrediste}`
+                    : 'Pretraži vožnje'}
+                </Text>
+                <ArrowRight size={18} stroke={Colors.black} strokeWidth={2.4} />
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
+        )}
 
         {/* Recent Destinations */}
         <View style={styles.section}>
@@ -241,6 +315,24 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarInitials: { color: Colors.accent, fontSize: 16, fontWeight: '700' },
+  iconBtnActive: { borderColor: Colors.accent, backgroundColor: Colors.accentSoft },
+
+  notifPanel: {
+    backgroundColor: Colors.cardBg, borderRadius: 20,
+    borderWidth: 1, borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  notifHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  notifTitle: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+  notifEmpty: {
+    alignItems: 'center', justifyContent: 'center',
+    gap: 10, paddingVertical: 32,
+  },
+  notifEmptyText: { color: Colors.gray500, fontSize: 14 },
 
   modeToggle: {
     flexDirection: 'row', gap: 4, padding: 4,
@@ -261,6 +353,32 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   whereToInner: {},
+
+  searchForm: {
+    backgroundColor: Colors.cardBg, borderRadius: 24,
+    borderWidth: 1, borderColor: Colors.border,
+    padding: 18, gap: 16,
+  },
+  searchFormHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  searchFormTitle: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+  routeInputs: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  routeDots: {
+    alignItems: 'center', paddingTop: 14, gap: 0,
+    width: 16,
+  },
+  routeLine: { width: 2, flex: 1, minHeight: 28, backgroundColor: Colors.border, marginVertical: 4 },
+  routeFields: { flex: 1, gap: 0 },
+  inputSpacer: { height: 8 },
+  searchSubmitBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: Colors.accent, borderRadius: 16,
+    paddingVertical: 14, paddingHorizontal: 20,
+  },
+  searchSubmitText: {
+    color: Colors.black, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'center',
+  },
   whereToRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 18, paddingVertical: 16, gap: 14,

@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent, borderRadius: 16,
     paddingVertical: 14, paddingHorizontal: 20,
   },
-  searchBtnDisabled: { backgroundColor: Colors.surface3, opacity: 0.6 },
+  searchBtnDisabled: { opacity: 0.4 },
   searchBtnText: { color: Colors.black, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'center' },
   filterSeatsText: { color: Colors.gray400, fontSize: 13 },
   resultCount: { color: Colors.gray500, fontSize: 12 },

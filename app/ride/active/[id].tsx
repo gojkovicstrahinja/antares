@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Phone, MessageCircle, MapPin } from 'lucide-react-native';
@@ -19,6 +19,7 @@ export default function ActiveRideScreen() {
   const router = useRouter();
   const { data: ride } = useRide(id!);
   const [driverLocation, setDriverLocation] = useState<{ x: number; y: number } | null>(null);
+  const [callInfo, setCallInfo] = useState(false);
 
   useRealtimeLocation(id!, (coords) => setDriverLocation(coords));
 
@@ -34,7 +35,7 @@ export default function ActiveRideScreen() {
       </View>
 
       <View style={styles.mapPlaceholder}>
-        <MapPin size={48} color={Colors.accent} />
+        <MapPin size={48} stroke={Colors.accent} />
         <Text style={styles.mapText}>
           {driverLocation
             ? `Vozač na: ${driverLocation.y.toFixed(4)}, ${driverLocation.x.toFixed(4)}`
@@ -58,17 +59,26 @@ export default function ActiveRideScreen() {
             style={styles.actionBtn}
             onPress={() => router.push(`/chat/${ride.vozac_id}`)}
           >
-            <MessageCircle size={22} color={Colors.white} />
+            <MessageCircle size={22} stroke={Colors.white} />
             <Text style={styles.actionText}>Poruka</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnAccent]}
-            onPress={() => Alert.alert('Poziv', 'Funkcija poziva dolazi uskoro.')}
+            onPress={() => setCallInfo(true)}
           >
-            <Phone size={22} color={Colors.black} />
+            <Phone size={22} stroke={Colors.black} />
             <Text style={[styles.actionText, styles.actionTextDark]}>Pozovi</Text>
           </TouchableOpacity>
         </View>
+
+        {callInfo && (
+          <View style={styles.callInfoBanner}>
+            <Text style={styles.callInfoText}>Funkcija poziva dolazi uskoro.</Text>
+            <TouchableOpacity onPress={() => setCallInfo(false)}>
+              <Text style={styles.callInfoClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -109,4 +119,12 @@ const styles = StyleSheet.create({
   actionBtnAccent: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   actionText: { color: Colors.white, fontSize: 15, fontWeight: '600' },
   actionTextDark: { color: Colors.black },
+  callInfoBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.inputBg, borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  callInfoText: { color: Colors.gray300, fontSize: 14 },
+  callInfoClose: { color: Colors.gray500, fontSize: 16, paddingLeft: 12 },
 });

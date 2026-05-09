@@ -61,6 +61,7 @@ export default function LoginScreen() {
             placeholder="ime@primer.rs"
             keyboardType="email-address"
             autoCapitalize="none"
+            returnKeyType="next"
             leftIcon={<Mail size={18} stroke={Colors.gray400} />}
           />
           <Input
@@ -69,6 +70,8 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             placeholder="••••••••"
             secureTextEntry
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
             leftIcon={<Lock size={18} stroke={Colors.gray400} />}
           />
 

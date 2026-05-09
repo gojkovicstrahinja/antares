@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ViewStyle, ScrollView,
+  View, Text, TouchableOpacity, StyleSheet, ViewStyle,
 } from 'react-native';
-import { MapPin, X } from 'lucide-react-native';
+import { MapPin, X, TrendingUp } from 'lucide-react-native';
 import { Input } from './Input';
 import { Colors } from '@/constants/colors';
 import { searchCities } from '@/constants/cities';
+
+const POPULAR = ['Beograd', 'Novi Sad', 'Niš', 'Kragujevac', 'Subotica', 'Čačak'];
 
 interface CityAutocompleteProps {
   value: string;
@@ -17,25 +19,25 @@ interface CityAutocompleteProps {
 
 export function CityAutocomplete({ value, onSelect, placeholder, label, containerStyle }: CityAutocompleteProps) {
   const [query, setQuery] = useState(value);
-  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
+
   const results = searchCities(query);
-  const showDropdown = open && query.length > 0 && results.length > 0;
+  const showSuggestions = focused && query.length === 0;
+  const showResults = focused && query.length > 0 && results.length > 0;
 
   useEffect(() => {
     setQuery(value);
-    setOpen(false);
   }, [value]);
 
   const handleSelect = (city: string) => {
     setQuery(city);
     onSelect(city);
-    setOpen(false);
+    setFocused(false);
   };
 
   const handleClear = () => {
     setQuery('');
     onSelect('');
-    setOpen(false);
   };
 
   return (
@@ -43,12 +45,9 @@ export function CityAutocomplete({ value, onSelect, placeholder, label, containe
       <Input
         label={label}
         value={query}
-        onChangeText={(t) => { setQuery(t); setOpen(t.length > 0); }}
-        onFocus={() => { if (query.length > 0) setOpen(true); }}
-        onBlur={() => {
-          // Malo odlaganje da onPress na item stigne pre zatvaranja
-          setTimeout(() => setOpen(false), 150);
-        }}
+        onChangeText={setQuery}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
         placeholder={placeholder ?? 'Unesite grad'}
         leftIcon={<MapPin size={18} stroke={Colors.gray400} />}
         rightIcon={query.length > 0 ? (
@@ -57,7 +56,28 @@ export function CityAutocomplete({ value, onSelect, placeholder, label, containe
           </TouchableOpacity>
         ) : undefined}
       />
-      {showDropdown && (
+
+      {showSuggestions && (
+        <View style={styles.dropdown}>
+          <View style={styles.dropdownHeader}>
+            <TrendingUp size={13} stroke={Colors.gray500} />
+            <Text style={styles.dropdownHeaderText}>Popularni gradovi</Text>
+          </View>
+          {POPULAR.map((city) => (
+            <TouchableOpacity
+              key={city}
+              style={styles.item}
+              onPress={() => handleSelect(city)}
+              activeOpacity={0.7}
+            >
+              <MapPin size={14} stroke={Colors.accent} />
+              <Text style={styles.itemText}>{city}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {showResults && (
         <View style={styles.dropdown}>
           {results.map((item) => (
             <TouchableOpacity
@@ -84,6 +104,22 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginTop: 4,
     overflow: 'hidden',
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  dropdownHeaderText: {
+    color: Colors.gray500,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   item: {
     flexDirection: 'row',

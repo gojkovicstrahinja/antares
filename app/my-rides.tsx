@@ -35,6 +35,8 @@ export default function MyRidesScreen() {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
 
   const handleBookingAction = async (
     bookingId: string,
@@ -180,30 +182,52 @@ export default function MyRidesScreen() {
                 <Text style={styles.viewBtnText}>Pogledaj</Text>
               </TouchableOpacity>
               {ride.status === 'otkazana' && (
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => handleDeleteRide(ride.id)}
-                  disabled={actionLoading === ride.id}
-                >
-                  {actionLoading === ride.id
-                    ? <ActivityIndicator size="small" color={Colors.error} />
-                    : <Trash2 size={15} stroke={Colors.error} />
-                  }
-                  <Text style={styles.cancelBtnText}>Izbriši</Text>
-                </TouchableOpacity>
+                confirmDelete === ride.id ? (
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmText}>Sigurno izbrišeš?</Text>
+                    <TouchableOpacity style={styles.confirmYes} onPress={() => { setConfirmDelete(null); handleDeleteRide(ride.id); }} disabled={actionLoading === ride.id}>
+                      {actionLoading === ride.id
+                        ? <ActivityIndicator size="small" color={Colors.black} />
+                        : <Text style={styles.confirmYesText}>Da</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.confirmNo} onPress={() => setConfirmDelete(null)}>
+                      <Text style={styles.confirmNoText}>Ne</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => setConfirmDelete(ride.id)}
+                    disabled={actionLoading === ride.id}
+                  >
+                    <Trash2 size={15} stroke={Colors.error} />
+                    <Text style={styles.cancelBtnText}>Izbriši</Text>
+                  </TouchableOpacity>
+                )
               )}
               {ride.status === 'aktivna' && (
-                <TouchableOpacity
-                  style={styles.cancelBtn}
-                  onPress={() => handleCancelRide(ride.id)}
-                  disabled={actionLoading === ride.id}
-                >
-                  {actionLoading === ride.id
-                    ? <ActivityIndicator size="small" color={Colors.error} />
-                    : <Trash2 size={15} stroke={Colors.error} />
-                  }
-                  <Text style={styles.cancelBtnText}>Otkaži vožnju</Text>
-                </TouchableOpacity>
+                confirmCancel === ride.id ? (
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmText}>Otkaži vožnju?</Text>
+                    <TouchableOpacity style={styles.confirmYes} onPress={() => { setConfirmCancel(null); handleCancelRide(ride.id); }} disabled={actionLoading === ride.id}>
+                      {actionLoading === ride.id
+                        ? <ActivityIndicator size="small" color={Colors.black} />
+                        : <Text style={styles.confirmYesText}>Da</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.confirmNo} onPress={() => setConfirmCancel(null)}>
+                      <Text style={styles.confirmNoText}>Ne</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={() => setConfirmCancel(ride.id)}
+                    disabled={actionLoading === ride.id}
+                  >
+                    <Trash2 size={15} stroke={Colors.error} />
+                    <Text style={styles.cancelBtnText}>Otkaži vožnju</Text>
+                  </TouchableOpacity>
+                )
               )}
             </View>
           </View>
@@ -356,4 +380,22 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.error,
   },
   cancelBtnText: { color: Colors.error, fontSize: 13, fontWeight: '600' },
+  confirmRow: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.error + '15', borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 8,
+    borderWidth: 1, borderColor: Colors.error,
+  },
+  confirmText: { color: Colors.error, fontSize: 12, flex: 1 },
+  confirmYes: {
+    backgroundColor: Colors.error, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 5,
+  },
+  confirmYesText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
+  confirmNo: {
+    backgroundColor: Colors.inputBg, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  confirmNoText: { color: Colors.gray300, fontSize: 12, fontWeight: '600' },
 });

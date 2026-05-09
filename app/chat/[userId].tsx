@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,6 +25,7 @@ export default function ChatScreen() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export default function ChatScreen() {
     const content = text.trim();
     setText('');
     setSending(true);
+    setSendError(false);
     const { data, error } = await supabase
       .from('messages')
       .insert({ sender_id: user.id, receiver_id: userId, content })
@@ -79,7 +81,7 @@ export default function ChatScreen() {
       .single();
     setSending(false);
     if (error) {
-      Alert.alert('Greška', 'Poruka nije poslata.');
+      setSendError(true);
       setText(content);
     } else if (data) {
       setMessages((prev) => [...prev, data]);
@@ -140,6 +142,15 @@ export default function ChatScreen() {
           />
         )}
 
+        {sendError && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>Poruka nije poslata. Pokušajte ponovo.</Text>
+            <TouchableOpacity onPress={() => setSendError(false)}>
+              <Text style={styles.errorBannerClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.quickReplies}>
           {QUICK_REPLIES.map((reply) => (
             <TouchableOpacity
@@ -166,7 +177,7 @@ export default function ChatScreen() {
             onPress={sendMessage}
             disabled={!text.trim() || sending}
           >
-            <Send size={20} color={Colors.black} />
+            <Send size={20} stroke={Colors.black} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -217,4 +228,11 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: { opacity: 0.5 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.error + '22', borderTopWidth: 1, borderTopColor: Colors.error,
+    paddingHorizontal: 16, paddingVertical: 10,
+  },
+  errorBannerText: { color: Colors.error, fontSize: 13, flex: 1 },
+  errorBannerClose: { color: Colors.error, fontSize: 16, paddingLeft: 12 },
 });

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Phone, MessageCircle, MapPin } from 'lucide-react-native';
+import { ArrowLeft, Phone, MessageCircle, MapPin, CheckCircle } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useRide } from '@/hooks/useRides';
 import { useRealtimeLocation } from '@/hooks/useRealtime';
+import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 
 const STATUS_LABELS: Record<string, string> = {
   aktivna: 'Vožnja nije počela',
@@ -17,13 +19,50 @@ const STATUS_LABELS: Record<string, string> = {
 export default function ActiveRideScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: ride } = useRide(id!);
+  const { user } = useAuthStore();
+  const { data: ride, refetch } = useRide(id!);
   const [driverLocation, setDriverLocation] = useState<{ x: number; y: number } | null>(null);
   const [callInfo, setCallInfo] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   useRealtimeLocation(id!, (coords) => setDriverLocation(coords));
 
   if (!ride) return null;
+
+  const isDriver = user?.id === ride.vozac_id;
+
+  const handleFinishRide = async () => {
+    setFinishing(true);
+    const { error } = await supabase
+      .from('rides')
+      .update({ status: 'zavrsena' })
+      .eq('id', ride.id);
+
+    if (!error) {
+      // Notify all confirmed passengers
+      const confirmed = ride.bookings?.filter((b) => b.status === 'confirmed') ?? [];
+      for (const booking of confirmed) {
+        await supabase.from('notifications').insert({
+          user_id: booking.putnik_id,
+          tip: 'voznja_zavrsena',
+          naslov: 'Vožnja završena',
+          telo: `${ride.polaziste} → ${ride.odrediste}. Ostavite ocenu!`,
+          data: { ride_id: ride.id },
+          read: false,
+        });
+      }
+
+      await refetch();
+      // Redirect driver to rate first passenger (or home if none)
+      const firstPassenger = confirmed[0];
+      if (firstPassenger) {
+        router.replace(`/rate/${ride.id}?ocenitiId=${firstPassenger.putnik_id}&tip=vozac_ocenjuje_putnika`);
+      } else {
+        router.replace('/(tabs)');
+      }
+    }
+    setFinishing(false);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -55,13 +94,15 @@ export default function ActiveRideScreen() {
         </View>
 
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => router.push(`/chat/${ride.vozac_id}`)}
-          >
-            <MessageCircle size={22} stroke={Colors.white} />
-            <Text style={styles.actionText}>Poruka</Text>
-          </TouchableOpacity>
+          {!isDriver && (
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => router.push(`/chat/${ride.vozac_id}`)}
+            >
+              <MessageCircle size={22} stroke={Colors.white} />
+              <Text style={styles.actionText}>Poruka</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnAccent]}
             onPress={() => setCallInfo(true)}
@@ -70,6 +111,30 @@ export default function ActiveRideScreen() {
             <Text style={[styles.actionText, styles.actionTextDark]}>Pozovi</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Driver: finish ride button */}
+        {isDriver && ride.status === 'u_toku' && (
+          <TouchableOpacity
+            style={styles.finishBtn}
+            onPress={handleFinishRide}
+            disabled={finishing}
+            activeOpacity={0.85}
+          >
+            {finishing
+              ? <ActivityIndicator color={Colors.white} />
+              : <>
+                  <CheckCircle size={20} stroke={Colors.white} />
+                  <Text style={styles.finishBtnText}>Završi vožnju</Text>
+                </>}
+          </TouchableOpacity>
+        )}
+
+        {ride.status === 'zavrsena' && (
+          <View style={styles.finishedBanner}>
+            <CheckCircle size={18} stroke={Colors.accent} />
+            <Text style={styles.finishedText}>Vožnja je završena</Text>
+          </View>
+        )}
 
         {callInfo && (
           <View style={styles.callInfoBanner}>
@@ -98,7 +163,7 @@ const styles = StyleSheet.create({
   mapText: { color: Colors.gray400, fontSize: 14 },
   infoCard: {
     backgroundColor: Colors.cardBg, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, gap: 20, borderTopWidth: 1, borderTopColor: Colors.border,
+    padding: 24, gap: 16, borderTopWidth: 1, borderTopColor: Colors.border,
   },
   statusBadge: {
     alignSelf: 'flex-start',
@@ -119,6 +184,16 @@ const styles = StyleSheet.create({
   actionBtnAccent: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   actionText: { color: Colors.white, fontSize: 15, fontWeight: '600' },
   actionTextDark: { color: Colors.black },
+  finishBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: Colors.error, borderRadius: 16, paddingVertical: 15,
+  },
+  finishBtnText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+  finishedBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center',
+    backgroundColor: Colors.accentSoft, borderRadius: 12, paddingVertical: 12,
+  },
+  finishedText: { color: Colors.accent, fontSize: 14, fontWeight: '600' },
   callInfoBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: Colors.inputBg, borderRadius: 12,

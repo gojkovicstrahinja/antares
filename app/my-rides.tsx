@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Clock, Users, ChevronRight, Plus, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Clock, Users, ChevronRight, Plus, Trash2, CheckCircle, XCircle, AlertCircle, Navigation } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useMyRides } from '@/hooks/useRides';
@@ -41,7 +41,8 @@ export default function MyRidesScreen() {
 
   const handleBookingAction = async (
     bookingId: string,
-    action: 'confirmed' | 'rejected'
+    action: 'confirmed' | 'rejected',
+    booking?: Booking & { ride?: RideWithDriver },
   ) => {
     setActionLoading(bookingId);
     setActionError(null);
@@ -50,7 +51,34 @@ export default function MyRidesScreen() {
     if (error) {
       setActionError('Greška pri ažuriranju rezervacije. Pokušajte ponovo.');
     } else {
+      // Notify passenger
+      if (booking?.putnik_id) {
+        const ride = rides.find((r) => r.bookings?.some((b) => b.id === bookingId));
+        await supabase.from('notifications').insert({
+          user_id: booking.putnik_id,
+          tip: action === 'confirmed' ? 'rezervacija_potvrdjena' : 'rezervacija_odbijena',
+          naslov: action === 'confirmed' ? 'Rezervacija potvrđena' : 'Rezervacija odbijena',
+          telo: ride
+            ? `${ride.polaziste} → ${ride.odrediste}, ${ride.datum}`
+            : 'Vaša rezervacija je ažurirana.',
+          data: ride ? { ride_id: ride.id, booking_id: bookingId } : undefined,
+          read: false,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    }
+  };
+
+  const handleStartRide = async (rideId: string) => {
+    setActionLoading(rideId);
+    setActionError(null);
+    const { error } = await supabase.from('rides').update({ status: 'u_toku' }).eq('id', rideId);
+    setActionLoading(null);
+    if (error) {
+      setActionError('Greška pri pokretanju vožnje.');
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+      router.push(`/ride/active/${rideId}`);
     }
   };
 
@@ -83,6 +111,8 @@ export default function MyRidesScreen() {
     const pendingBookings = ride.bookings?.filter((b) => b.status === 'pending') ?? [];
     const confirmedBookings = ride.bookings?.filter((b) => b.status === 'confirmed') ?? [];
     const isOpen = expanded === ride.id;
+    const today = new Date().toISOString().split('T')[0];
+    const canStart = ride.status === 'aktivna' && ride.datum <= today && confirmedBookings.length > 0;
 
     return (
       <View style={styles.rideCard}>
@@ -166,14 +196,14 @@ export default function MyRidesScreen() {
                       <View style={styles.bookingActions}>
                         <TouchableOpacity
                           style={styles.rejectBtn}
-                          onPress={() => handleBookingAction(booking.id, 'rejected')}
+                          onPress={() => handleBookingAction(booking.id, 'rejected', booking)}
                           disabled={actionLoading === booking.id}
                         >
                           <XCircle size={18} stroke={Colors.error} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.confirmBtn}
-                          onPress={() => handleBookingAction(booking.id, 'confirmed')}
+                          onPress={() => handleBookingAction(booking.id, 'confirmed', booking)}
                           disabled={actionLoading === booking.id}
                         >
                           {actionLoading === booking.id
@@ -190,6 +220,27 @@ export default function MyRidesScreen() {
 
             {/* Akcije */}
             <View style={styles.rideActions}>
+              {canStart && (
+                <TouchableOpacity
+                  style={styles.startBtn}
+                  onPress={() => handleStartRide(ride.id)}
+                  disabled={actionLoading === ride.id}
+                >
+                  {actionLoading === ride.id
+                    ? <ActivityIndicator size="small" color={Colors.black} />
+                    : <Navigation size={15} stroke={Colors.black} />}
+                  <Text style={styles.startBtnText}>Pokreni vožnju</Text>
+                </TouchableOpacity>
+              )}
+              {ride.status === 'u_toku' && (
+                <TouchableOpacity
+                  style={styles.startBtn}
+                  onPress={() => router.push(`/ride/active/${ride.id}`)}
+                >
+                  <Navigation size={15} stroke={Colors.black} />
+                  <Text style={styles.startBtnText}>Aktivna vožnja</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.viewBtn}
                 onPress={() => router.push(`/ride/${ride.id}`)}
@@ -200,7 +251,7 @@ export default function MyRidesScreen() {
               {ride.status === 'otkazana' && (
                 confirmDelete === ride.id ? (
                   <View style={styles.confirmRow}>
-                    <Text style={styles.confirmText}>Sigurno izbrišeš?</Text>
+                    <Text style={styles.confirmText}>Sigurno želiš da izbrišeš?</Text>
                     <TouchableOpacity style={styles.confirmYes} onPress={() => { setConfirmDelete(null); handleDeleteRide(ride.id); }} disabled={actionLoading === ride.id}>
                       {actionLoading === ride.id
                         ? <ActivityIndicator size="small" color={Colors.black} />
@@ -401,6 +452,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.accent,
   },
   viewBtnText: { color: Colors.accent, fontSize: 13, fontWeight: '600' },
+  startBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 10, borderRadius: 10,
+    backgroundColor: Colors.accent,
+  },
+  startBtnText: { color: Colors.black, fontSize: 13, fontWeight: '700' },
   deleteBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 10, borderRadius: 10,

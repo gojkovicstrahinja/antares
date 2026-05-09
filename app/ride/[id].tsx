@@ -41,7 +41,14 @@ export default function RideDetailScreen() {
     if (!user || !ride) return;
     setConfirming(false);
     try {
-      await bookRide({ ride_id: ride.id, putnik_id: user.id, broj_mesta: 1 });
+      await bookRide({
+        ride_id: ride.id,
+        putnik_id: user.id,
+        broj_mesta: 1,
+        vozac_id: ride.vozac_id,
+        polaziste: ride.polaziste,
+        odrediste: ride.odrediste,
+      });
       hapticSuccess();
       setBooked(true);
     } catch (e: unknown) {

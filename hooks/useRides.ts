@@ -103,9 +103,29 @@ export function useBookRide() {
       polazna_stanica?: string;
       izlazna_stanica?: string;
       napomena?: string;
+      // extra for notification (not sent to DB)
+      vozac_id?: string;
+      polaziste?: string;
+      odrediste?: string;
     }) => {
-      const { data, error } = await supabase.from('bookings').insert(booking).select().single();
+      const { vozac_id, polaziste, odrediste, ...bookingData } = booking;
+      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
       if (error) throw error;
+
+      // Notify driver
+      if (vozac_id) {
+        await supabase.from('notifications').insert({
+          user_id: vozac_id,
+          tip: 'nova_rezervacija',
+          naslov: 'Nova rezervacija',
+          telo: polaziste && odrediste
+            ? `Putnik želi mesto: ${polaziste} → ${odrediste}`
+            : 'Novi zahtev za rezervaciju',
+          data: { ride_id: booking.ride_id, booking_id: data.id },
+          read: false,
+        });
+      }
+
       return data;
     },
     onSuccess: (_, vars) => {

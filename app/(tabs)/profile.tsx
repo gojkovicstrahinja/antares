@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import {
   Star, Shield, Car, ChevronRight, Bell, Pencil, Trash2, LogOut, AlertCircle,
-  Mail, Phone, CreditCard, Route,
+  Mail, Phone, CreditCard, Route, Ticket,
 } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
@@ -38,6 +38,7 @@ export default function ProfileScreen() {
         <Switch value={notifications} onValueChange={setNotifications} trackColor={{ false: Colors.border, true: Colors.accent }} thumbColor={Colors.white} />
       ),
     },
+    { icon: Ticket, label: 'Moje rezervacije', sub: '', onPress: () => router.push('/my-bookings') },
     { icon: Route, label: 'Moje vožnje', sub: '', onPress: () => router.push('/my-rides') },
     { icon: Shield, label: 'Privatnost i sigurnost', onPress: () => {} },
   ];

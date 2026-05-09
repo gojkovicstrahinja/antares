@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Platform } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 // Load Geist font and global web styles
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -42,6 +43,7 @@ function AuthGate() {
   const { session, loading, profile } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  usePushNotifications();
 
   useEffect(() => {
     if (loading) return;
@@ -78,6 +80,8 @@ export default function RootLayout() {
           <Stack.Screen name="chat/[userId]" options={{ animation: 'fade' }} />
           <Stack.Screen name="profile/[id]" options={{ animation: 'fade' }} />
           <Stack.Screen name="my-rides" options={{ animation: 'fade' }} />
+          <Stack.Screen name="my-bookings" options={{ animation: 'fade' }} />
+          <Stack.Screen name="rate/[rideId]" options={{ animation: 'fade' }} />
           <Stack.Screen name="edit-profile" options={{ animation: 'fade' }} />
           <Stack.Screen name="verification" options={{ animation: 'fade' }} />
         </Stack>

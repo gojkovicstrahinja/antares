@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Image } from 'expo-image';
@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
 import { Pressable } from '@/components/ui/Pressable';
 import { formatDate } from '@/lib/utils';
+import { useNotifications } from '@/hooks/useNotifications';
 import type { RideWithDriver, Booking } from '@/types';
 
 function useFadeIn(delay = 0) {
@@ -352,6 +353,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { profile, user } = useAuthStore();
   const { setSearchParams } = useRideStore();
+  const { notifications, unreadCount, loading: notifLoading, markAllRead } = useNotifications(user?.id ?? '');
   const [activeTab, setActiveTab] = useState<'putnik' | 'vozac'>('putnik');
   const [polaziste, setPolaziste] = useState('');
   const [odrediste, setOdrediste] = useState('');
@@ -397,6 +399,7 @@ export default function HomeScreen() {
   const toggleNotifications = () => {
     if (!showNotifications) {
       setShowNotifications(true);
+      markAllRead();
       Animated.parallel([
         Animated.timing(notifOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
         Animated.spring(notifTranslateY, { toValue: 0, useNativeDriver: true, speed: 30, bounciness: 4 }),
@@ -454,6 +457,11 @@ export default function HomeScreen() {
               accessibilityLabel="Notifikacije"
             >
               <Bell size={18} stroke={showNotifications ? Colors.accent : Colors.text} />
+              {unreadCount > 0 && !showNotifications && (
+                <View style={styles.notifDot}>
+                  <Text style={styles.notifDotText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.avatarBtn}>
               {avatarUrl ? (
@@ -478,10 +486,26 @@ export default function HomeScreen() {
                 <X size={18} stroke={Colors.gray400} />
               </TouchableOpacity>
             </View>
-            <View style={styles.notifEmpty}>
-              <Bell size={32} stroke={Colors.gray700} strokeWidth={1.5} />
-              <Text style={styles.notifEmptyText}>Nema novih obaveštenja</Text>
-            </View>
+            {notifLoading ? (
+              <View style={styles.notifEmpty}>
+                <ActivityIndicator color={Colors.accent} size="small" />
+              </View>
+            ) : notifications.length === 0 ? (
+              <View style={styles.notifEmpty}>
+                <Bell size={32} stroke={Colors.gray700} strokeWidth={1.5} />
+                <Text style={styles.notifEmptyText}>Nema novih obaveštenja</Text>
+              </View>
+            ) : (
+              notifications.slice(0, 8).map((n) => (
+                <View key={n.id} style={[styles.notifItem, !n.read && styles.notifItemUnread]}>
+                  {!n.read && <View style={styles.notifUnreadDot} />}
+                  <View style={styles.notifItemContent}>
+                    <Text style={styles.notifItemTitle}>{n.naslov}</Text>
+                    <Text style={styles.notifItemBody}>{n.telo}</Text>
+                  </View>
+                </View>
+              ))
+            )}
           </Animated.View>
         )}
 
@@ -707,6 +731,27 @@ const styles = StyleSheet.create({
     gap: 10, paddingVertical: 32,
   },
   notifEmptyText: { color: Colors.gray500, fontSize: 14 },
+  notifDot: {
+    position: 'absolute', top: 6, right: 6,
+    minWidth: 16, height: 16, borderRadius: 8,
+    backgroundColor: Colors.error,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: Colors.black,
+  },
+  notifDotText: { color: Colors.white, fontSize: 9, fontWeight: '800' },
+  notifItem: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  notifItemUnread: { backgroundColor: 'rgba(25,224,122,0.04)' },
+  notifUnreadDot: {
+    width: 7, height: 7, borderRadius: 4,
+    backgroundColor: Colors.accent, marginTop: 4, flexShrink: 0,
+  },
+  notifItemContent: { flex: 1, gap: 2 },
+  notifItemTitle: { color: Colors.white, fontSize: 13, fontWeight: '700' },
+  notifItemBody: { color: Colors.gray400, fontSize: 12, lineHeight: 17 },
 
   modeToggle: {
     flexDirection: 'row', gap: 4, padding: 4,

@@ -123,6 +123,10 @@ export default function SearchScreen() {
   };
 
   const openFilters = () => {
+    if (showFilters) {
+      setShowFilters(false);
+      return;
+    }
     setPendingFilters(filters);
     setShowFilters(true);
   };
@@ -141,7 +145,7 @@ export default function SearchScreen() {
   const setP = (patch: Partial<Filters>) =>
     setPendingFilters((prev) => ({ ...prev, ...patch }));
 
-  const canSearch = !!(polaziste || odrediste);
+  const canSearch = true;
 
   return (
     <ScreenView style={styles.container} edges={['top']}>
@@ -207,6 +211,7 @@ export default function SearchScreen() {
               setDatum(d);
               setSearchParams({ datum: d });
               setSearchTriggered(false);
+              setShowDatePicker(false);
             }}
           />
         </View>
@@ -223,9 +228,9 @@ export default function SearchScreen() {
           >
             <Search size={18} stroke={Colors.black} strokeWidth={2.4} />
             <Text style={styles.searchBtnText}>
-              {polaziste && odrediste
-                ? `${polaziste} → ${odrediste} · ${formatDate(datum)}`
-                : 'Pretraži vožnje'}
+              {polaziste || odrediste
+                ? `${polaziste || 'Bilo gde'} → ${odrediste || 'Bilo gde'} · ${formatDate(datum)}`
+                : `Sve vožnje · ${formatDate(datum)}`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -420,7 +425,8 @@ const styles = StyleSheet.create({
 
   // Filter panel
   filterPanel: {
-    flex: 1, marginHorizontal: 20, marginBottom: 16,
+    marginHorizontal: 20, marginBottom: 16,
+    maxHeight: 500,
     backgroundColor: Colors.cardBg, borderRadius: 20,
     padding: 20, gap: 16,
     borderWidth: 1, borderColor: Colors.border,

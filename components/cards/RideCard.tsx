@@ -1,11 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { MapPin, Clock, Users, Star } from 'lucide-react-native';
+import { Shield, Star } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import type { RideWithDriver } from '@/types';
-import { format } from 'date-fns';
-import { sr } from 'date-fns/locale';
 
 interface RideCardProps {
   ride: RideWithDriver;
@@ -16,57 +14,72 @@ export function RideCard({ ride, onPress }: RideCardProps) {
   const driver = ride.profiles;
   const confirmedBookings = ride.bookings?.filter((b) => b.status === 'confirmed').length ?? 0;
   const availableSeats = ride.slobodna_mesta - confirmedBookings;
+  const initials = `${driver.ime[0]}${driver.prezime[0]}`.toUpperCase();
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-      <View style={styles.header}>
-        <View style={styles.driverInfo}>
-          <Image
-            source={driver.foto_url ?? 'https://ui-avatars.com/api/?name=' + driver.ime + '+' + driver.prezime + '&background=1A1A1A&color=00C566'}
-            style={styles.avatar}
-            contentFit="cover"
-          />
-          <View>
-            <Text style={styles.driverName}>{driver.ime} {driver.prezime}</Text>
-            <View style={styles.ratingRow}>
-              <Star size={12} color={Colors.accent} fill={Colors.accent} />
-              <Text style={styles.rating}>{driver.ocena_prosek.toFixed(1)}</Text>
-              <Text style={styles.ratingCount}>· {driver.broj_voznji} vožnji</Text>
-            </View>
+      {/* Timeline layout */}
+      <View style={styles.timeline}>
+        {/* Time column */}
+        <View style={styles.timeCol}>
+          <Text style={styles.time}>{ride.vreme_polaska.slice(0, 5)}</Text>
+          <View style={styles.lineWrapper}>
+            <View style={styles.dotGreen} />
+            <View style={styles.line} />
+            <View style={styles.dotSquare} />
           </View>
         </View>
-        <View style={styles.priceTag}>
-          <Text style={styles.price}>{ride.cena_po_osobi.toLocaleString()} RSD</Text>
-          <Text style={styles.priceLabel}>po osobi</Text>
-        </View>
-      </View>
 
-      <View style={styles.route}>
-        <View style={styles.routePoint}>
-          <View style={[styles.dot, styles.dotStart]} />
+        {/* Route column */}
+        <View style={styles.routeCol}>
           <Text style={styles.city}>{ride.polaziste}</Text>
-        </View>
-        <View style={styles.routeLine} />
-        <View style={styles.routePoint}>
-          <View style={[styles.dot, styles.dotEnd]} />
+          <Text style={styles.duration}>·</Text>
           <Text style={styles.city}>{ride.odrediste}</Text>
         </View>
+
+        {/* Price column */}
+        <View style={styles.priceCol}>
+          <Text style={styles.price}>{ride.cena_po_osobi.toLocaleString()}</Text>
+          <Text style={styles.priceSub}>RSD / osobi</Text>
+          {availableSeats === 1 && (
+            <View style={styles.lastSeatBadge}>
+              <Text style={styles.lastSeatText}>Poslednje!</Text>
+            </View>
+          )}
+        </View>
       </View>
 
-      <View style={styles.footer}>
-        <View style={styles.footerItem}>
-          <Clock size={14} color={Colors.gray400} />
-          <Text style={styles.footerText}>{ride.vreme_polaska.slice(0, 5)}</Text>
-        </View>
-        <View style={styles.footerItem}>
-          <Users size={14} color={Colors.gray400} />
-          <Text style={styles.footerText}>{availableSeats} slobodnih mesta</Text>
-        </View>
-        {driver.verifikovan_id && (
-          <View style={styles.verifiedBadge}>
-            <Text style={styles.verifiedText}>Verifikovan</Text>
+      <View style={styles.divider} />
+
+      {/* Driver row */}
+      <View style={styles.driverRow}>
+        {driver.foto_url ? (
+          <Image source={driver.foto_url} style={styles.avatar} contentFit="cover" />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <Text style={styles.initials}>{initials}</Text>
           </View>
         )}
+        <View style={styles.driverInfo}>
+          <View style={styles.driverNameRow}>
+            <Text style={styles.driverName}>{driver.ime} {driver.prezime[0]}.</Text>
+            {driver.verifikovan_id && (
+              <Shield size={13} stroke={Colors.accent} strokeWidth={2.2} />
+            )}
+          </View>
+          <View style={styles.ratingRow}>
+            <Star size={10} stroke={Colors.warning} fill={Colors.warning} />
+            <Text style={styles.rating}>{driver.ocena_prosek.toFixed(1)}</Text>
+            <Text style={styles.metaDot}>•</Text>
+            <Text style={styles.trips}>{driver.broj_voznji} vožnji</Text>
+          </View>
+        </View>
+        <View style={styles.seatsChip}>
+          <Text style={[styles.seatsNum, availableSeats <= 1 && styles.seatsLow]}>
+            {availableSeats}
+          </Text>
+          <Text style={styles.seatsMeta}> mesta</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -74,39 +87,45 @@ export function RideCard({ ride, onPress }: RideCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    gap: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.cardBg, borderRadius: 20,
+    padding: 16, borderWidth: 1, borderColor: Colors.border,
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  driverInfo: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  driverName: { color: Colors.white, fontWeight: '600', fontSize: 14 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-  rating: { color: Colors.accent, fontSize: 12, fontWeight: '600' },
-  ratingCount: { color: Colors.gray500, fontSize: 12 },
-  priceTag: { alignItems: 'flex-end' },
-  price: { color: Colors.accent, fontWeight: '700', fontSize: 18 },
-  priceLabel: { color: Colors.gray500, fontSize: 11, marginTop: 2 },
-  route: { gap: 6 },
-  routePoint: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  routeLine: { height: 1, backgroundColor: Colors.border, marginLeft: 7, marginVertical: 2 },
-  dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
-  dotStart: { borderColor: Colors.accent, backgroundColor: 'transparent' },
-  dotEnd: { borderColor: Colors.gray400, backgroundColor: Colors.gray400 },
-  city: { color: Colors.white, fontSize: 15, fontWeight: '500' },
-  footer: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  footerItem: { flexDirection: 'row', gap: 5, alignItems: 'center' },
-  footerText: { color: Colors.gray400, fontSize: 13 },
-  verifiedBadge: {
-    backgroundColor: 'rgba(0, 197, 102, 0.15)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginLeft: 'auto',
+  timeline: { flexDirection: 'row', gap: 14 },
+  timeCol: { alignItems: 'center', width: 48 },
+  time: { fontSize: 17, fontWeight: '700', letterSpacing: -0.5, color: Colors.text },
+  lineWrapper: { alignItems: 'center', marginTop: 5 },
+  dotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent },
+  line: { width: 1.5, height: 34, backgroundColor: Colors.borderStrong, marginVertical: 3 },
+  dotSquare: { width: 8, height: 8, borderRadius: 2, backgroundColor: Colors.text },
+  routeCol: { flex: 1, paddingTop: 2, gap: 2 },
+  city: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  duration: { fontSize: 11, color: Colors.gray400 },
+  priceCol: { alignItems: 'flex-end', paddingTop: 2 },
+  price: { fontSize: 22, fontWeight: '800', letterSpacing: -0.8, color: Colors.text, lineHeight: 26 },
+  priceSub: { fontSize: 10, color: Colors.gray400, fontWeight: '600', letterSpacing: 0.3, marginTop: 2 },
+  lastSeatBadge: {
+    marginTop: 6, paddingHorizontal: 8, paddingVertical: 3,
+    backgroundColor: Colors.accentSoft, borderRadius: 8,
   },
-  verifiedText: { color: Colors.accent, fontSize: 11, fontWeight: '600' },
+  lastSeatText: { fontSize: 10, color: Colors.accent, fontWeight: '700' },
+  divider: { height: 1, backgroundColor: Colors.border, marginVertical: 12 },
+  driverRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatar: { width: 36, height: 36, borderRadius: 18 },
+  avatarFallback: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.accentDark,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  initials: { color: Colors.accent, fontSize: 13, fontWeight: '700' },
+  driverInfo: { flex: 1 },
+  driverNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  driverName: { fontSize: 13, fontWeight: '700', color: Colors.text },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  rating: { fontSize: 11, color: Colors.gray400 },
+  metaDot: { fontSize: 11, color: Colors.gray400 },
+  trips: { fontSize: 11, color: Colors.gray400 },
+  seatsChip: { flexDirection: 'row', alignItems: 'baseline' },
+  seatsNum: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  seatsLow: { color: Colors.warning },
+  seatsMeta: { fontSize: 11, color: Colors.gray400 },
 });

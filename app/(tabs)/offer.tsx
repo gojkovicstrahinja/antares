@@ -11,6 +11,9 @@ import { supabase } from '@/lib/supabase';
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { TimePicker } from '@/components/ui/TimePicker';
+import { formatDate } from '@/lib/utils';
 
 const TOTAL_STEPS = 6;
 
@@ -130,7 +133,7 @@ export default function OfferScreen() {
           <Text style={styles.successTitle}>Vožnja je objavljena!</Text>
           <Text style={styles.successText}>
             {polaziste} → {odrediste}{'\n'}
-            {datum} u {vreme} · {mesta} mesta · {parseInt(cena).toLocaleString()} RSD
+            {formatDate(datum)} u {vreme} · {mesta} mesta · {parseInt(cena).toLocaleString()} RSD
           </Text>
           <View style={styles.successActions}>
             <Button title="Vidi moje vožnje" onPress={() => { handleReset(); router.push('/my-rides'); }} size="lg" />
@@ -175,18 +178,8 @@ export default function OfferScreen() {
 
         {step === 3 && (
           <View style={styles.form}>
-            <Input
-              label="Datum polaska (GGGG-MM-DD)"
-              value={datum}
-              onChangeText={setDatum}
-              placeholder="2025-06-15"
-            />
-            <Input
-              label="Vreme polaska (HH:MM)"
-              value={vreme}
-              onChangeText={setVreme}
-              placeholder="08:00"
-            />
+            <DatePicker value={datum} onChange={setDatum} />
+            <TimePicker value={vreme} onChange={setVreme} />
           </View>
         )}
 
@@ -247,7 +240,7 @@ export default function OfferScreen() {
               {([
                 ['Polazište', polaziste],
                 ['Odredište', odrediste],
-                ['Datum', datum],
+                ['Datum', formatDate(datum)],
                 ['Vreme', vreme],
                 ['Slobodna mesta', mesta.toString()],
                 ['Cena po osobi', `${parseInt(cena).toLocaleString()} RSD`],

@@ -1,23 +1,39 @@
 export const Colors = {
-  black: '#000000',
+  // Core backgrounds
+  black: '#050505',
   white: '#FFFFFF',
-  accent: '#00C566',
-  accentDark: '#009E52',
-  gray100: '#F5F5F5',
-  gray200: '#E0E0E0',
-  gray300: '#BDBDBD',
-  gray400: '#9E9E9E',
-  gray500: '#757575',
-  gray600: '#616161',
-  gray700: '#424242',
-  gray800: '#212121',
-  gray900: '#121212',
-  error: '#FF3B30',
-  warning: '#FF9500',
-  success: '#34C759',
-  info: '#007AFF',
-  cardBg: '#1A1A1A',
-  inputBg: '#1C1C1E',
-  border: '#2C2C2E',
+  cardBg: '#0F0F10',
+  inputBg: '#17171A',
+  surface3: '#1F1F23',
+
+  // Borders
+  border: 'rgba(255,255,255,0.07)',
+  borderStrong: 'rgba(255,255,255,0.14)',
+
+  // Text hierarchy
+  text: '#FFFFFF',
+  textDim: 'rgba(255,255,255,0.62)',
+  gray100: 'rgba(255,255,255,0.90)',
+  gray200: 'rgba(255,255,255,0.80)',
+  gray300: 'rgba(255,255,255,0.70)',
+  gray400: 'rgba(255,255,255,0.42)',
+  gray500: 'rgba(255,255,255,0.42)',
+  gray600: 'rgba(255,255,255,0.28)',
+  gray700: 'rgba(255,255,255,0.16)',
+  gray800: '#17171A',
+  gray900: '#0F0F10',
+
+  // Brand
+  accent: '#19E07A',
+  accentDark: '#0E8C4D',
+  accentSoft: 'rgba(25,224,122,0.12)',
+  accentSoft2: 'rgba(25,224,122,0.20)',
+
+  // Semantic
+  error: '#FF5A5F',
+  warning: '#FFB23F',
+  success: '#19E07A',
+  info: '#4D9EFF',
+
   overlay: 'rgba(0,0,0,0.6)',
 } as const;

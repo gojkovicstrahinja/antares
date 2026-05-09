@@ -9,6 +9,7 @@ import {
   ArrowLeft, Star, Shield, Car, Users, Clock, MapPin, MessageCircle, CheckCircle, AlertCircle,
 } from 'lucide-react-native';
 import { RouteMap } from '@/components/maps/RouteMap';
+import { formatDate } from '@/lib/utils';
 import { Colors } from '@/constants/colors';
 import { useRide, useBookRide } from '@/hooks/useRides';
 import { useAuthStore } from '@/stores/authStore';
@@ -106,7 +107,7 @@ export default function RideDetailScreen() {
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <Clock size={18} color={Colors.accent} />
-            <Text style={styles.metaText}>{ride.datum}</Text>
+            <Text style={styles.metaText}>{formatDate(ride.datum)}</Text>
           </View>
           <View style={styles.metaItem}>
             <Users size={18} color={Colors.accent} />

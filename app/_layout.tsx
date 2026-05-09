@@ -3,7 +3,23 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
+
+// Load Geist font on web
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const link = document.createElement('link');
+  link.rel = 'preconnect';
+  link.href = 'https://fonts.googleapis.com';
+  document.head.appendChild(link);
+  const link2 = document.createElement('link');
+  link2.rel = 'stylesheet';
+  link2.href = 'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap';
+  document.head.appendChild(link2);
+  const style = document.createElement('style');
+  style.textContent = `*, *::before, *::after { font-family: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important; }`;
+  document.head.appendChild(style);
+}
 
 const queryClient = new QueryClient();
 
@@ -39,7 +55,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         <AuthGate />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000' } }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#050505' } }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="ride/[id]" options={{ presentation: 'card' }} />

@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import {
-  Star, Shield, Car, ChevronRight, Bell, Pencil, Trash2,
-  LogOut, AlertCircle,
+  Star, Shield, Car, ChevronRight, Bell, Pencil, Trash2, LogOut, AlertCircle,
+  Mail, Phone, CreditCard, Route,
 } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
@@ -26,142 +26,148 @@ export default function ProfileScreen() {
     setSigningOut(false);
   };
 
-  const menuItems = [
-    {
-      icon: Bell,
-      label: 'Notifikacije',
-      onPress: () => {},
-      rightElement: (
-        <Switch
-          value={notifications}
-          onValueChange={setNotifications}
-          trackColor={{ false: Colors.border, true: Colors.accent }}
-          thumbColor={Colors.white}
-        />
-      ),
-    },
-    { icon: Car, label: 'Moje vožnje', onPress: () => router.push('/my-rides') },
-    { icon: Shield, label: 'Verifikacija', onPress: () => router.push('/verification') },
-    { icon: Trash2, label: 'Obriši nalog', onPress: () => {}, danger: true },
+  const verifications = [
+    { icon: Mail, label: 'Email', sub: 'Verifikovan', done: true },
+    { icon: Phone, label: 'Telefon', sub: profile.verifikovan_telefon ? 'Verifikovan' : 'Dodaj broj', done: profile.verifikovan_telefon },
+    { icon: CreditCard, label: 'Lična karta', sub: profile.verifikovan_id ? 'Verified bedž aktivan' : 'Dobij Verified bedž', done: profile.verifikovan_id, highlight: !profile.verifikovan_id },
   ];
 
-  const verItems = [
-    { label: 'Telefon', done: profile.verifikovan_telefon },
-    { label: 'Email', done: true },
-    { label: 'Lična karta', done: profile.verifikovan_id },
+  const settings = [
+    {
+      icon: Bell, label: 'Notifikacije', rightElement: (
+        <Switch value={notifications} onValueChange={setNotifications} trackColor={{ false: Colors.border, true: Colors.accent }} thumbColor={Colors.white} />
+      ),
+    },
+    { icon: Route, label: 'Moje vožnje', sub: '', onPress: () => router.push('/my-rides') },
+    { icon: Shield, label: 'Privatnost i sigurnost', onPress: () => {} },
   ];
+
+  const initials = `${profile.ime[0]}${profile.prezime[0]}`.toUpperCase();
+  const avatarSrc = profile.foto_url
+    ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.ime)}+${encodeURIComponent(profile.prezime)}&background=0E8C4D&color=19E07A&bold=true&size=200`;
+
+  const verDone = verifications.filter((v) => v.done).length;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Hero */}
+        {/* Hero gradient header */}
         <View style={styles.hero}>
-          <TouchableOpacity
-            style={styles.editBtn}
-            onPress={() => router.push('/edit-profile')}
-            activeOpacity={0.8}
-          >
-            <Pencil size={15} stroke={Colors.white} />
-            <Text style={styles.editBtnText}>Uredi</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push('/edit-profile')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.avatarWrapper}>
-              <Image
-                source={profile.foto_url
-                  ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.ime)}+${encodeURIComponent(profile.prezime)}&background=1A1A1A&color=00C566&size=200`}
-                style={styles.avatar}
-                contentFit="cover"
-              />
+          <View style={styles.heroGradient} />
+          <View style={styles.heroContent}>
+            <View style={styles.heroAvatarRow}>
+              <View style={styles.avatarRingWrapper}>
+                <Image source={avatarSrc} style={styles.avatar} contentFit="cover" />
+                {profile.verifikovan_id && (
+                  <View style={styles.verifiedBadge}>
+                    <Shield size={12} stroke={Colors.black} fill={Colors.black} />
+                  </View>
+                )}
+              </View>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => router.push('/edit-profile')}
+              >
+                <Pencil size={12} stroke={Colors.text} />
+                <Text style={styles.editBtnText}>Uredi profil</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.name}>{profile.ime} {profile.prezime}</Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.since}>Član od {new Date(profile.created_at).getFullYear()}</Text>
               {profile.verifikovan_id && (
-                <View style={styles.verifiedBadge}>
-                  <Shield size={13} stroke={Colors.black} fill={Colors.black} />
-                </View>
+                <>
+                  <Text style={styles.metaDot}>•</Text>
+                  <Shield size={13} stroke={Colors.accent} strokeWidth={2.4} />
+                  <Text style={styles.verified}>Verifikovan</Text>
+                </>
               )}
-              <View style={styles.avatarEditOverlay}>
-                <Pencil size={16} stroke={Colors.white} />
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <Text style={styles.name}>{profile.ime} {profile.prezime}</Text>
-          <Text style={styles.memberSince}>
-            Član od {new Date(profile.created_at).getFullYear()} ·{' '}
-            {profile.uloga === 'putnik' ? 'Putnik' : profile.uloga === 'vozac' ? 'Vozač' : 'Putnik & Vozač'}
-          </Text>
-
-          <View style={styles.stats}>
-            <View style={styles.stat}>
-              <View style={styles.statValueRow}>
-                <Text style={styles.statValue}>{profile.ocena_prosek.toFixed(1)}</Text>
-                <Star size={13} stroke={Colors.accent} fill={Colors.accent} />
-              </View>
-              <Text style={styles.statLabel}>Ocena</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{profile.broj_voznji}</Text>
-              <Text style={styles.statLabel}>Vožnji</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>
-                {verItems.filter((v) => v.done).length}/{verItems.length}
-              </Text>
-              <Text style={styles.statLabel}>Verif.</Text>
             </View>
           </View>
         </View>
 
-        {/* Verifikacije */}
+        {/* Stats */}
+        <View style={styles.statsCard}>
+          {[
+            { v: profile.ocena_prosek > 0 ? profile.ocena_prosek.toFixed(1) : '—', l: 'OCENA', icon: <Star size={14} stroke={Colors.warning} fill={Colors.warning} /> },
+            { v: String(profile.broj_voznji), l: 'VOŽNJI', icon: <Route size={14} stroke={Colors.text} /> },
+            { v: `${verDone}/3`, l: 'VERIF.', icon: <Shield size={14} stroke={Colors.accent} /> },
+          ].map((s, i) => (
+            <React.Fragment key={s.l}>
+              {i > 0 && <View style={styles.statDivider} />}
+              <View style={styles.stat}>
+                <View style={styles.statValueRow}>
+                  <Text style={styles.statValue}>{s.v}</Text>
+                  {s.icon}
+                </View>
+                <Text style={styles.statLabel}>{s.l}</Text>
+              </View>
+            </React.Fragment>
+          ))}
+        </View>
+
+        {/* Verifications */}
         <TouchableOpacity
           style={styles.section}
           onPress={() => router.push('/verification')}
-          activeOpacity={0.85}
+          activeOpacity={0.9}
         >
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Verifikacije</Text>
             <Text style={styles.sectionLink}>Upravljaj →</Text>
           </View>
-          <View style={styles.verificationRow}>
-            {verItems.map((v) => (
-              <View key={v.label} style={[styles.verItem, v.done && styles.verItemDone]}>
-                <Text style={[styles.verText, v.done && styles.verTextDone]}>
-                  {v.done ? '✓ ' : '○ '}{v.label}
-                </Text>
+          <View style={styles.verList}>
+            {verifications.map((v, i) => (
+              <View
+                key={v.label}
+                style={[
+                  styles.verItem,
+                  v.highlight && styles.verItemHighlight,
+                  i < verifications.length - 1 && styles.verItemBorder,
+                ]}
+              >
+                <View style={[styles.verIconBox, v.done && styles.verIconBoxDone]}>
+                  <v.icon size={18} stroke={v.done ? Colors.accent : Colors.textDim} />
+                </View>
+                <View style={styles.verText}>
+                  <Text style={styles.verLabel}>{v.label}</Text>
+                  <Text style={styles.verSub}>{v.sub}</Text>
+                </View>
+                {v.done ? (
+                  <View style={styles.checkCircle}>
+                    <Text style={styles.checkMark}>✓</Text>
+                  </View>
+                ) : (
+                  <ChevronRight size={18} stroke={Colors.gray400} />
+                )}
               </View>
             ))}
           </View>
-          {!profile.verifikovan_id && (
-            <Text style={styles.verHint}>
-              Verifikujte ličnu kartu i dobijte "Verified" bedž
-            </Text>
-          )}
         </TouchableOpacity>
 
-        {/* Meni */}
-        <View style={styles.menu}>
-          {menuItems.map((item) => (
+        {/* Settings */}
+        <View style={styles.settingsCard}>
+          {settings.map((row, i) => (
             <TouchableOpacity
-              key={item.label}
-              style={styles.menuItem}
-              onPress={item.onPress}
+              key={row.label}
+              style={[styles.settingsRow, i < settings.length - 1 && styles.settingsRowBorder]}
+              onPress={row.onPress}
               activeOpacity={0.7}
             >
-              <item.icon size={20} stroke={item.danger ? Colors.error : Colors.gray300} />
-              <Text style={[styles.menuLabel, item.danger && styles.menuLabelDanger]}>
-                {item.label}
-              </Text>
-              {item.rightElement ?? <ChevronRight size={18} stroke={Colors.gray600} />}
+              <View style={styles.settingsIcon}>
+                <row.icon size={16} stroke={Colors.text} />
+              </View>
+              <View style={styles.settingsText}>
+                <Text style={styles.settingsLabel}>{row.label}</Text>
+                {row.sub ? <Text style={styles.settingsSub}>{row.sub}</Text> : null}
+              </View>
+              {row.rightElement ?? <ChevronRight size={18} stroke={Colors.gray400} />}
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Odjava */}
+        {/* Sign out */}
         {confirmSignOut ? (
           <View style={styles.confirmBox}>
             <View style={styles.confirmHeader}>
@@ -176,11 +182,12 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <TouchableOpacity style={styles.signOutBtn} onPress={() => setConfirmSignOut(true)} activeOpacity={0.7}>
-            <LogOut size={18} stroke={Colors.gray400} />
+            <LogOut size={16} stroke={Colors.error} />
             <Text style={styles.signOutText}>Odjavi se</Text>
           </TouchableOpacity>
         )}
 
+        <Text style={styles.version}>Antares · v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -190,80 +197,109 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.black },
   scroll: { gap: 20, paddingBottom: 48 },
 
-  hero: { alignItems: 'center', gap: 8, paddingTop: 20, paddingBottom: 8, position: 'relative' },
-  editBtn: {
-    position: 'absolute', top: 20, right: 20,
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.cardBg, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderWidth: 1, borderColor: Colors.border,
+  hero: { position: 'relative' },
+  heroGradient: {
+    height: 120,
+    backgroundColor: Colors.accentSoft,
   },
-  editBtnText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  avatarWrapper: { position: 'relative', marginBottom: 4 },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
-  avatarEditOverlay: {
-    position: 'absolute', inset: 0, borderRadius: 50,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center', justifyContent: 'center',
-    opacity: 0,
+  heroContent: { paddingHorizontal: 20, marginTop: -52 },
+  heroAvatarRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 },
+  avatarRingWrapper: { position: 'relative' },
+  avatar: {
+    width: 88, height: 88, borderRadius: 44,
+    borderWidth: 3, borderColor: Colors.black,
   },
   verifiedBadge: {
-    position: 'absolute', bottom: 0, right: 0,
-    backgroundColor: Colors.accent, borderRadius: 12, width: 24, height: 24,
+    position: 'absolute', bottom: 2, right: 2,
+    backgroundColor: Colors.accent, borderRadius: 12, width: 22, height: 22,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: Colors.black,
   },
-  name: { color: Colors.white, fontSize: 24, fontWeight: '800' },
-  memberSince: { color: Colors.gray500, fontSize: 13 },
-  stats: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.cardBg, borderRadius: 20, padding: 20,
-    marginTop: 8, alignSelf: 'stretch', marginHorizontal: 24,
+  editBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
+    backgroundColor: Colors.cardBg,
     borderWidth: 1, borderColor: Colors.border,
   },
-  stat: { flex: 1, alignItems: 'center', gap: 4 },
+  editBtnText: { color: Colors.text, fontSize: 12, fontWeight: '600' },
+  name: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  since: { fontSize: 13, color: Colors.textDim, fontWeight: '500' },
+  metaDot: { fontSize: 13, color: Colors.textDim },
+  verified: { fontSize: 13, color: Colors.textDim, fontWeight: '500' },
+
+  statsCard: {
+    flexDirection: 'row', alignItems: 'stretch',
+    backgroundColor: Colors.cardBg, borderRadius: 20, padding: 4,
+    marginHorizontal: 20, borderWidth: 1, borderColor: Colors.border,
+  },
+  stat: { flex: 1, alignItems: 'center', paddingVertical: 16, paddingHorizontal: 8 },
   statValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statValue: { color: Colors.white, fontSize: 20, fontWeight: '800' },
-  statLabel: { color: Colors.gray500, fontSize: 12 },
-  statDivider: { width: 1, height: 40, backgroundColor: Colors.border },
+  statValue: { fontSize: 28, fontWeight: '800', letterSpacing: -1, color: Colors.text },
+  statLabel: { fontSize: 11, color: Colors.gray400, fontWeight: '600', marginTop: 6, letterSpacing: 0.4 },
+  statDivider: { width: 1, backgroundColor: Colors.border, marginVertical: 12 },
 
-  section: { paddingHorizontal: 24, gap: 10 },
+  section: { paddingHorizontal: 20, gap: 12 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  sectionLink: { color: Colors.accent, fontSize: 13, fontWeight: '600' },
-  verificationRow: { flexDirection: 'row', gap: 8 },
-  verItem: {
-    flex: 1, backgroundColor: Colors.cardBg, borderRadius: 10,
-    padding: 10, alignItems: 'center',
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, letterSpacing: -0.2 },
+  sectionLink: { fontSize: 12, color: Colors.accent, fontWeight: '600' },
+  verList: {
+    backgroundColor: Colors.cardBg, borderRadius: 20, overflow: 'hidden',
     borderWidth: 1, borderColor: Colors.border,
   },
-  verItemDone: { backgroundColor: 'rgba(0,197,102,0.1)', borderColor: Colors.accent },
-  verText: { color: Colors.gray500, fontSize: 12, fontWeight: '600' },
-  verTextDone: { color: Colors.accent },
-  verHint: { color: Colors.gray600, fontSize: 12 },
-
-  menu: { paddingHorizontal: 24, gap: 0 },
-  menuItem: {
+  verItem: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    paddingHorizontal: 16, paddingVertical: 14,
   },
-  menuLabel: { flex: 1, color: Colors.white, fontSize: 15 },
-  menuLabelDanger: { color: Colors.error },
+  verItemHighlight: { borderColor: Colors.accentSoft2 },
+  verItemBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
+  verIconBox: {
+    width: 38, height: 38, borderRadius: 12,
+    backgroundColor: Colors.surface3,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  verIconBoxDone: { backgroundColor: Colors.accentSoft },
+  verText: { flex: 1 },
+  verLabel: { fontSize: 14, fontWeight: '700', color: Colors.text },
+  verSub: { fontSize: 12, color: Colors.gray400, marginTop: 1 },
+  checkCircle: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: Colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  checkMark: { color: Colors.black, fontSize: 13, fontWeight: '800' },
+
+  settingsCard: {
+    marginHorizontal: 20,
+    backgroundColor: Colors.cardBg, borderRadius: 20, overflow: 'hidden',
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: '14px 16px' as never, paddingHorizontal: 16, paddingVertical: 14 },
+  settingsRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
+  settingsIcon: {
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: Colors.surface3,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  settingsText: { flex: 1 },
+  settingsLabel: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  settingsSub: { fontSize: 11, color: Colors.gray400, marginTop: 1 },
 
   signOutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, marginHorizontal: 24,
+    gap: 10, marginHorizontal: 20,
     paddingVertical: 14, borderRadius: 16,
     backgroundColor: Colors.cardBg, borderWidth: 1, borderColor: Colors.border,
   },
-  signOutText: { color: Colors.gray300, fontSize: 15, fontWeight: '600' },
+  signOutText: { color: Colors.error, fontSize: 14, fontWeight: '600' },
   confirmBox: {
-    marginHorizontal: 24, backgroundColor: Colors.cardBg,
+    marginHorizontal: 20, backgroundColor: Colors.cardBg,
     borderRadius: 16, padding: 20, gap: 12,
     borderWidth: 1, borderColor: Colors.border,
   },
   confirmHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  confirmTitle: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  confirmText: { color: Colors.gray400, fontSize: 14 },
+  confirmTitle: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+  confirmText: { color: Colors.textDim, fontSize: 14 },
   confirmBtns: { flexDirection: 'row', gap: 10 },
+  version: { textAlign: 'center', fontSize: 11, color: Colors.gray400, fontWeight: '500' },
 });

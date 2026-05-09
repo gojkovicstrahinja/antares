@@ -10,6 +10,7 @@ import { Colors } from '@/constants/colors';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Profile, Review } from '@/types';
+import { formatDate } from '@/lib/utils';
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -165,7 +166,7 @@ export default function PublicProfileScreen() {
                     </View>
                   </View>
                   <Text style={styles.reviewDate}>
-                    {new Date(review.created_at).toLocaleDateString('sr-RS')}
+                    {formatDate(review.created_at.split('T')[0])}
                   </Text>
                 </View>
                 {review.komentar ? (

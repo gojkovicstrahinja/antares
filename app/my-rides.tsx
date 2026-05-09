@@ -11,6 +11,7 @@ import { useMyRides } from '@/hooks/useRides';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import type { RideWithDriver, Booking } from '@/types';
+import { formatDate } from '@/lib/utils';
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   aktivna: { label: 'Aktivna', color: Colors.accent },
@@ -87,7 +88,7 @@ export default function MyRidesScreen() {
           <View style={styles.rideMeta}>
             <View style={styles.metaRow}>
               <Clock size={13} stroke={Colors.gray400} />
-              <Text style={styles.metaText}>{ride.datum} · {ride.vreme_polaska.slice(0, 5)}</Text>
+              <Text style={styles.metaText}>{formatDate(ride.datum)} · {ride.vreme_polaska.slice(0, 5)}</Text>
             </View>
             <View style={styles.metaRow}>
               <Users size={13} stroke={Colors.gray400} />

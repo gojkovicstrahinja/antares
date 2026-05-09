@@ -3,7 +3,15 @@ import { sr } from 'date-fns/locale';
 
 export function formatDate(dateStr: string): string {
   try {
-    return format(parseISO(dateStr), "d. MMMM yyyy.", { locale: sr });
+    return format(parseISO(dateStr), 'dd/MM/yyyy');
+  } catch {
+    return dateStr;
+  }
+}
+
+export function formatDateShort(dateStr: string): string {
+  try {
+    return format(parseISO(dateStr), 'dd/MM');
   } catch {
     return dateStr;
   }

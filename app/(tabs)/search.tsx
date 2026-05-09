@@ -6,7 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { sr } from 'date-fns/locale';
-import { ArrowLeft, Filter, Users, X, Star, Clock, Banknote, RotateCcw } from 'lucide-react-native';
+import { ArrowLeft, Filter, Users, X, Star, Clock, Banknote, RotateCcw, Calendar, Search } from 'lucide-react-native';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Colors } from '@/constants/colors';
 import { useRideStore } from '@/stores/rideStore';
 import { useSearchRides } from '@/hooks/useRides';
@@ -14,6 +15,7 @@ import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
 import { RideCard } from '@/components/cards/RideCard';
 import { Button } from '@/components/ui/Button';
 import { RouteMap } from '@/components/maps/RouteMap';
+import { formatDate } from '@/lib/utils';
 import type { RideWithDriver } from '@/types';
 
 interface Filters {
@@ -84,20 +86,35 @@ function countActiveFilters(f: Filters): number {
 export default function SearchScreen() {
   const router = useRouter();
   const { searchParams, setSearchParams, setSelectedRide } = useRideStore();
-  const [datum] = useState(searchParams.datum || new Date().toISOString().split('T')[0]);
+  const [polaziste, setPolaziste] = useState(searchParams.polaziste || '');
+  const [odrediste, setOdrediste] = useState(searchParams.odrediste || '');
+  const [datum, setDatum] = useState(searchParams.datum || new Date().toISOString().split('T')[0]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [pendingFilters, setPendingFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [searchTriggered, setSearchTriggered] = useState(
+    !!(searchParams.polaziste || searchParams.odrediste)
+  );
 
   const { data: rides = [], isLoading, refetch } = useSearchRides(
-    searchParams.polaziste,
-    searchParams.odrediste,
+    polaziste,
+    odrediste,
     datum,
     searchParams.brPutnika,
+    searchTriggered,
   );
 
   const filteredRides = useMemo(() => applyFilters(rides, filters), [rides, filters]);
   const activeCount = countActiveFilters(filters);
+
+  const handleSearch = () => {
+    setSearchParams({ polaziste, odrediste, datum });
+    setShowDatePicker(false);
+    setSearchTriggered(true);
+    // Force refetch even if query key didn't change
+    if (searchTriggered) refetch();
+  };
 
   const handleRidePress = (ride: RideWithDriver) => {
     setSelectedRide(ride);
@@ -123,6 +140,8 @@ export default function SearchScreen() {
   const setP = (patch: Partial<Filters>) =>
     setPendingFilters((prev) => ({ ...prev, ...patch }));
 
+  const canSearch = !!(polaziste || odrediste);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -134,14 +153,14 @@ export default function SearchScreen() {
 
       <View style={styles.searchBar}>
         <CityAutocomplete
-          value={searchParams.polaziste}
-          onSelect={(c) => setSearchParams({ polaziste: c })}
+          value={polaziste}
+          onSelect={(c) => { setPolaziste(c); setSearchTriggered(false); }}
           placeholder="Odakle?"
           containerStyle={{ flex: 1 }}
         />
         <CityAutocomplete
-          value={searchParams.odrediste}
-          onSelect={(c) => setSearchParams({ odrediste: c })}
+          value={odrediste}
+          onSelect={(c) => { setOdrediste(c); setSearchTriggered(false); }}
           placeholder="Kuda?"
           containerStyle={{ flex: 1 }}
         />
@@ -149,14 +168,21 @@ export default function SearchScreen() {
 
       <View style={styles.filterBar}>
         <View style={styles.filterInfo}>
-          <Text style={styles.filterDate}>
-            {format(new Date(datum), 'd. MMMM', { locale: sr })}
-          </Text>
+          <TouchableOpacity
+            style={[styles.filterChip, showDatePicker && styles.filterChipActive]}
+            onPress={() => { setShowDatePicker(!showDatePicker); setShowFilters(false); setSearchTriggered(false); }}
+            activeOpacity={0.75}
+          >
+            <Calendar size={13} stroke={showDatePicker ? Colors.black : Colors.gray400} />
+            <Text style={[styles.filterDate, showDatePicker && styles.filterDateActive]}>
+              {formatDate(datum)}
+            </Text>
+          </TouchableOpacity>
           <View style={styles.filterSeats}>
-            <Users size={14} stroke={Colors.gray400} />
+            <Users size={13} stroke={Colors.gray400} />
             <Text style={styles.filterSeatsText}>{searchParams.brPutnika} putnik</Text>
           </View>
-          {filteredRides.length > 0 && (
+          {searchTriggered && filteredRides.length > 0 && (
             <Text style={styles.resultCount}>{filteredRides.length} vožnji</Text>
           )}
         </View>
@@ -171,6 +197,38 @@ export default function SearchScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {showDatePicker && (
+        <View style={styles.datepickerWrapper}>
+          <DatePicker
+            value={datum}
+            onChange={(d) => {
+              setDatum(d);
+              setSearchParams({ datum: d });
+              setSearchTriggered(false);
+            }}
+          />
+        </View>
+      )}
+
+      {/* Search button — shown when params changed or not yet searched */}
+      {!showFilters && !searchTriggered && (
+        <View style={styles.searchBtnWrapper}>
+          <TouchableOpacity
+            style={[styles.searchBtn, !canSearch && styles.searchBtnDisabled]}
+            onPress={handleSearch}
+            disabled={!canSearch}
+            activeOpacity={0.85}
+          >
+            <Search size={18} stroke={Colors.black} strokeWidth={2.4} />
+            <Text style={styles.searchBtnText}>
+              {polaziste && odrediste
+                ? `${polaziste} → ${odrediste} · ${formatDate(datum)}`
+                : 'Pretraži vožnje'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Filter panel */}
       {showFilters && (
@@ -327,9 +385,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 12,
   },
-  filterInfo: { flexDirection: 'row', gap: 12, alignItems: 'center', flex: 1 },
-  filterDate: { color: Colors.white, fontWeight: '600', fontSize: 14 },
+  filterInfo: { flexDirection: 'row', gap: 8, alignItems: 'center', flex: 1 },
+  filterChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: Colors.inputBg, borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 7,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  filterChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  filterDate: { color: Colors.text, fontWeight: '600', fontSize: 13 },
+  filterDateActive: { color: Colors.black },
   filterSeats: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  datepickerWrapper: { paddingHorizontal: 20, paddingBottom: 8 },
+  searchBtnWrapper: { paddingHorizontal: 20, paddingBottom: 12 },
+  searchBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: Colors.accent, borderRadius: 16,
+    paddingVertical: 14, paddingHorizontal: 20,
+  },
+  searchBtnDisabled: { backgroundColor: Colors.surface3, opacity: 0.6 },
+  searchBtnText: { color: Colors.black, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'center' },
   filterSeatsText: { color: Colors.gray400, fontSize: 13 },
   resultCount: { color: Colors.gray500, fontSize: 12 },
   filterBtn: {

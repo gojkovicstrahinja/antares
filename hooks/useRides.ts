@@ -2,30 +2,34 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { RideWithDriver } from '@/types';
 
-export function useSearchRides(polaziste: string, odrediste: string, datum: string, brPutnika: number) {
+export function useSearchRides(
+  polaziste: string,
+  odrediste: string,
+  datum: string,
+  brPutnika: number,
+  enabled: boolean = false,
+) {
   return useQuery({
-    queryKey: ['rides', polaziste, odrediste, datum, brPutnika],
+    queryKey: ['rides-search', polaziste, odrediste, datum, brPutnika],
     queryFn: async (): Promise<RideWithDriver[]> => {
-      if (!polaziste || !odrediste) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from('rides')
-        .select(`
-          *,
-          profiles (*),
-          vehicles (*),
-          ride_stops (*),
-          bookings (*)
-        `)
+        .select(`*, profiles (*), vehicles (*), ride_stops (*), bookings (*)`)
         .eq('status', 'aktivna')
-        .ilike('polaziste', `%${polaziste}%`)
-        .ilike('odrediste', `%${odrediste}%`)
-        .eq('datum', datum)
         .gte('slobodna_mesta', brPutnika)
         .order('vreme_polaska', { ascending: true });
+
+      if (polaziste) query = query.ilike('polaziste', `%${polaziste}%`);
+      if (odrediste) query = query.ilike('odrediste', `%${odrediste}%`);
+      if (datum) query = query.eq('datum', datum);
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data as unknown as RideWithDriver[]) ?? [];
     },
-    enabled: !!polaziste && !!odrediste && !!datum,
+    enabled,
+    staleTime: 0,
+    gcTime: 0,
   });
 }
 

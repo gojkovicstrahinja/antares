@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Image } from 'expo-image';
 import {
   Search, Car, Clock, Users, ChevronRight, Bell, Navigation,
@@ -14,8 +14,32 @@ import { useMyRides } from '@/hooks/useRides';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
+import { Pressable } from '@/components/ui/Pressable';
 import { formatDate } from '@/lib/utils';
 import type { RideWithDriver, Booking } from '@/types';
+
+function useFadeIn(delay = 0) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: 1, duration: 320, delay,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+  return anim;
+}
+
+function useSlideIn(delay = 0, fromY = 12) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(fromY)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 280, delay, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, delay, useNativeDriver: true, speed: 28, bounciness: 4 }),
+    ]).start();
+  }, []);
+  return { opacity, transform: [{ translateY }] };
+}
 
 const RECENT_DESTINATIONS = ['Novi Sad', 'Niš', 'Kragujevac', 'Subotica'];
 
@@ -35,6 +59,12 @@ function DriverDashboard({ userId, profile, router }: {
   const queryClient = useQueryClient();
   const { data: rides = [], isLoading } = useMyRides(userId);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const stat0 = useSlideIn(0);
+  const stat1 = useSlideIn(60);
+  const stat2 = useSlideIn(120);
+  const nextRideAnim = useSlideIn(80);
+  const pendingAnim = useSlideIn(160);
+  const ctaAnim = useFadeIn(240);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -93,31 +123,32 @@ function DriverDashboard({ userId, profile, router }: {
     <View style={d.container}>
       {/* Stats row */}
       <View style={d.statsRow}>
-        <View style={d.statCard}>
+        <Animated.View style={[d.statCard, stat0]}>
           <Text style={d.statValue}>{stats.total}</Text>
           <Text style={d.statLabel}>Završenih</Text>
-        </View>
-        <View style={[d.statCard, d.statCardMid]}>
+        </Animated.View>
+        <Animated.View style={[d.statCard, d.statCardMid, stat1]}>
           <Text style={d.statValue}>{stats.active}</Text>
           <Text style={d.statLabel}>Aktivnih</Text>
-        </View>
-        <View style={d.statCard}>
+        </Animated.View>
+        <Animated.View style={[d.statCard, stat2]}>
           <View style={d.statRatingRow}>
             <Star size={13} stroke={Colors.warning} fill={Colors.warning} />
             <Text style={d.statValue}>{(profile?.ocena_prosek ?? 0).toFixed(1)}</Text>
           </View>
           <Text style={d.statLabel}>Ocena</Text>
-        </View>
+        </Animated.View>
       </View>
 
       {/* Next ride */}
       {nextRide ? (
-        <View style={d.section}>
+        <Animated.View style={[d.section, nextRideAnim]}>
           <Text style={d.sectionTitle}>Sledeća vožnja</Text>
-          <TouchableOpacity
+          <Pressable
             style={d.nextRideCard}
             onPress={() => router.push(`/ride/${nextRide.id}`)}
-            activeOpacity={0.82}
+            pressScale={0.985}
+            hoverScale={1.01}
           >
             <View style={d.nextRideRoute}>
               <View style={d.routeDotStart} />
@@ -142,18 +173,18 @@ function DriverDashboard({ userId, profile, router }: {
               <Text style={d.nextRidePrice}>{nextRide.cena_po_osobi.toLocaleString()} RSD</Text>
             </View>
             <ChevronRight size={16} stroke={Colors.gray400} style={d.nextRideChevron} />
-          </TouchableOpacity>
-        </View>
+          </Pressable>
+        </Animated.View>
       ) : (
-        <View style={d.noRideBanner}>
+        <Animated.View style={[d.noRideBanner, nextRideAnim]}>
           <MapPin size={20} stroke={Colors.gray500} />
           <Text style={d.noRideText}>Nemate zakazanih vožnji</Text>
-        </View>
+        </Animated.View>
       )}
 
       {/* Pending bookings */}
       {pendingBookings.length > 0 && (
-        <View style={d.section}>
+        <Animated.View style={[d.section, pendingAnim]}>
           <View style={d.sectionHeader}>
             <Text style={d.sectionTitle}>Čeka potvrdu</Text>
             <View style={d.pendingBadge}>
@@ -192,26 +223,30 @@ function DriverDashboard({ userId, profile, router }: {
               </View>
             </View>
           ))}
-        </View>
+        </Animated.View>
       )}
 
       {/* Stats teaser if no rides yet */}
       {stats.total === 0 && stats.active === 0 && (
-        <View style={d.tipCard}>
+        <Animated.View style={[d.tipCard, ctaAnim]}>
           <TrendingUp size={18} stroke={Colors.accent} />
           <Text style={d.tipText}>Objavite vožnju i počnite da zaradjujete uz put.</Text>
-        </View>
+        </Animated.View>
       )}
 
       {/* CTA */}
-      <TouchableOpacity style={d.offerBtn} onPress={() => router.push('/(tabs)/offer')} activeOpacity={0.85}>
-        <Plus size={18} stroke={Colors.black} strokeWidth={2.5} />
-        <Text style={d.offerBtnText}>Objavi novu vožnju</Text>
-      </TouchableOpacity>
+      <Animated.View style={ctaAnim}>
+        <Pressable style={d.offerBtn} onPress={() => router.push('/(tabs)/offer')} pressScale={0.97}>
+          <Plus size={18} stroke={Colors.black} strokeWidth={2.5} />
+          <Text style={d.offerBtnText}>Objavi novu vožnju</Text>
+        </Pressable>
+      </Animated.View>
 
-      <TouchableOpacity style={d.myRidesLink} onPress={() => router.push('/my-rides')} activeOpacity={0.7}>
-        <Text style={d.myRidesLinkText}>Sve moje vožnje →</Text>
-      </TouchableOpacity>
+      <Animated.View style={[d.myRidesLink, ctaAnim]}>
+        <Pressable onPress={() => router.push('/my-rides')} pressScale={0.97}>
+          <Text style={d.myRidesLinkText}>Sve moje vožnje →</Text>
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
@@ -323,6 +358,60 @@ export default function HomeScreen() {
   const [expanded, setExpanded] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Screen entrance animation (on tab focus)
+  const screenOpacity = useRef(new Animated.Value(0)).current;
+  const screenTranslateY = useRef(new Animated.Value(10)).current;
+
+  useFocusEffect(useCallback(() => {
+    screenOpacity.setValue(0);
+    screenTranslateY.setValue(10);
+    Animated.parallel([
+      Animated.timing(screenOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
+      Animated.spring(screenTranslateY, { toValue: 0, useNativeDriver: true, speed: 28, bounciness: 3 }),
+    ]).start();
+  }, []));
+
+  // Tab content transition
+  const tabOpacity = useRef(new Animated.Value(1)).current;
+  const tabTranslateY = useRef(new Animated.Value(0)).current;
+
+  const switchTab = (tab: 'putnik' | 'vozac') => {
+    if (tab === activeTab) return;
+    Animated.parallel([
+      Animated.timing(tabOpacity, { toValue: 0, duration: 100, useNativeDriver: true }),
+      Animated.timing(tabTranslateY, { toValue: 6, duration: 100, useNativeDriver: true }),
+    ]).start(() => {
+      setActiveTab(tab);
+      tabTranslateY.setValue(-6);
+      Animated.parallel([
+        Animated.timing(tabOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(tabTranslateY, { toValue: 0, useNativeDriver: true, speed: 30, bounciness: 3 }),
+      ]).start();
+    });
+  };
+
+  // Notification panel animation
+  const notifOpacity = useRef(new Animated.Value(0)).current;
+  const notifTranslateY = useRef(new Animated.Value(-10)).current;
+
+  const toggleNotifications = () => {
+    if (!showNotifications) {
+      setShowNotifications(true);
+      Animated.parallel([
+        Animated.timing(notifOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(notifTranslateY, { toValue: 0, useNativeDriver: true, speed: 30, bounciness: 4 }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(notifOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+        Animated.timing(notifTranslateY, { toValue: -8, duration: 150, useNativeDriver: true }),
+      ]).start(() => {
+        setShowNotifications(false);
+        notifTranslateY.setValue(-10);
+      });
+    }
+  };
+
   const goToSearch = (params: { polaziste?: string; odrediste?: string }) => {
     setSearchParams({
       polaziste: params.polaziste ?? polaziste,
@@ -349,6 +438,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <Animated.View style={{ flex: 1, opacity: screenOpacity, transform: [{ translateY: screenTranslateY }] }}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
         {/* Header */}
@@ -360,7 +450,7 @@ export default function HomeScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={[styles.iconBtn, showNotifications && styles.iconBtnActive]}
-              onPress={() => setShowNotifications((v) => !v)}
+              onPress={toggleNotifications}
               accessibilityLabel="Notifikacije"
             >
               <Bell size={18} stroke={showNotifications ? Colors.accent : Colors.text} />
@@ -381,10 +471,10 @@ export default function HomeScreen() {
 
         {/* Notifications panel */}
         {showNotifications && (
-          <View style={styles.notifPanel}>
+          <Animated.View style={[styles.notifPanel, { opacity: notifOpacity, transform: [{ translateY: notifTranslateY }] }]}>
             <View style={styles.notifHeader}>
               <Text style={styles.notifTitle}>Obaveštenja</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)} hitSlop={8}>
+              <TouchableOpacity onPress={toggleNotifications} hitSlop={8}>
                 <X size={18} stroke={Colors.gray400} />
               </TouchableOpacity>
             </View>
@@ -392,7 +482,7 @@ export default function HomeScreen() {
               <Bell size={32} stroke={Colors.gray700} strokeWidth={1.5} />
               <Text style={styles.notifEmptyText}>Nema novih obaveštenja</Text>
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* Mode Toggle */}
@@ -404,7 +494,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={o.k}
               style={[styles.modeTab, activeTab === o.k && styles.modeTabActive]}
-              onPress={() => setActiveTab(o.k)}
+              onPress={() => switchTab(o.k)}
               activeOpacity={0.8}
             >
               <o.icon size={16} stroke={activeTab === o.k ? Colors.black : Colors.textDim} />
@@ -415,6 +505,7 @@ export default function HomeScreen() {
           ))}
         </View>
 
+        <Animated.View style={{ opacity: tabOpacity, transform: [{ translateY: tabTranslateY }] }}>
         {activeTab === 'vozac' ? (
           <DriverDashboard userId={user?.id ?? ''} profile={profile} router={router} />
         ) : (
@@ -554,10 +645,11 @@ export default function HomeScreen() {
             </View>
 
             {/* Driver promo banner */}
-            <TouchableOpacity
+            <Pressable
               style={styles.promoBanner}
-              onPress={() => setActiveTab('vozac')}
-              activeOpacity={0.88}
+              onPress={() => switchTab('vozac')}
+              pressScale={0.97}
+              hoverScale={1.01}
             >
               <Car size={32} stroke={Colors.black} strokeWidth={1.8} />
               <View style={styles.promoText}>
@@ -565,11 +657,13 @@ export default function HomeScreen() {
                 <Text style={styles.promoSub}>Ponudite slobodna mesta u svom autu</Text>
               </View>
               <ChevronRight size={22} stroke={Colors.black} strokeWidth={2.4} />
-            </TouchableOpacity>
+            </Pressable>
           </>
         )}
+        </Animated.View>
 
       </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   );
 }

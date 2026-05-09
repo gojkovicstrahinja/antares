@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Shield, Star } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
+import { Pressable } from '@/components/ui/Pressable';
 import type { RideWithDriver } from '@/types';
 
 interface RideCardProps {
@@ -14,13 +15,12 @@ export function RideCard({ ride, onPress }: RideCardProps) {
   const driver = ride.profiles;
   const confirmedBookings = ride.bookings?.filter((b) => b.status === 'confirmed').length ?? 0;
   const availableSeats = ride.slobodna_mesta - confirmedBookings;
-  const initials = `${driver.ime[0]}${driver.prezime[0]}`.toUpperCase();
+  const initials = `${driver.ime?.[0] ?? ''}${driver.prezime?.[0] ?? ''}`.toUpperCase() || '?';
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <Pressable style={styles.card} onPress={onPress} pressScale={0.98} hoverScale={1.01}>
       {/* Timeline layout */}
       <View style={styles.timeline}>
-        {/* Time column */}
         <View style={styles.timeCol}>
           <Text style={styles.time}>{ride.vreme_polaska.slice(0, 5)}</Text>
           <View style={styles.lineWrapper}>
@@ -30,14 +30,12 @@ export function RideCard({ ride, onPress }: RideCardProps) {
           </View>
         </View>
 
-        {/* Route column */}
         <View style={styles.routeCol}>
           <Text style={styles.city}>{ride.polaziste}</Text>
           <Text style={styles.duration}>·</Text>
           <Text style={styles.city}>{ride.odrediste}</Text>
         </View>
 
-        {/* Price column */}
         <View style={styles.priceCol}>
           <Text style={styles.price}>{ride.cena_po_osobi.toLocaleString()}</Text>
           <Text style={styles.priceSub}>RSD / osobi</Text>
@@ -51,7 +49,6 @@ export function RideCard({ ride, onPress }: RideCardProps) {
 
       <View style={styles.divider} />
 
-      {/* Driver row */}
       <View style={styles.driverRow}>
         {driver.foto_url ? (
           <Image source={driver.foto_url} style={styles.avatar} contentFit="cover" />
@@ -81,7 +78,7 @@ export function RideCard({ ride, onPress }: RideCardProps) {
           <Text style={styles.seatsMeta}> mesta</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 

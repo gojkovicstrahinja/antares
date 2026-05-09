@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenView } from '@/components/ui/ScreenView';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { format } from 'date-fns';
@@ -67,16 +67,16 @@ export default function ChatsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenView style={styles.container} edges={['top']}>
         <View style={styles.centered}>
           <ActivityIndicator color={Colors.accent} />
         </View>
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScreenView style={styles.container} edges={['top']}>
       <Text style={styles.title}>Poruke</Text>
 
       {conversations.length === 0 ? (
@@ -126,7 +126,7 @@ export default function ChatsScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
-    </SafeAreaView>
+    </ScreenView>
   );
 }
 

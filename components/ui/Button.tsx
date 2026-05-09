@@ -1,6 +1,8 @@
-import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import React, { useRef } from 'react';
+import {
+  Animated, TouchableOpacity, Text, ActivityIndicator,
+  StyleSheet, ViewStyle, TextStyle, Platform,
+} from 'react-native';
 import { Colors } from '@/constants/colors';
 
 interface ButtonProps {
@@ -14,6 +16,8 @@ interface ButtonProps {
   textStyle?: TextStyle;
 }
 
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
 export function Button({
   title,
   onPress,
@@ -24,28 +28,67 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const isHovered = useRef(false);
+
+  const spring = (toValue: number, bounce = false) =>
+    Animated.spring(scale, {
+      toValue,
+      useNativeDriver: true,
+      speed: bounce ? 22 : 50,
+      bounciness: bounce ? 6 : 0,
+    }).start();
+
+  const timing = (toValue: number) =>
+    Animated.timing(scale, {
+      toValue,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+
+  const webProps = Platform.OS === 'web'
+    ? {
+        onMouseEnter: () => { isHovered.current = true; timing(1.02); },
+        onMouseLeave: () => { isHovered.current = false; timing(1); },
+      }
+    : {};
+
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web') {
+      import('expo-haptics').then(({ impactAsync, ImpactFeedbackStyle }) => {
+        impactAsync(ImpactFeedbackStyle.Light);
+      }).catch(() => {});
+    }
     onPress();
   };
 
   return (
-    <TouchableOpacity
-      style={[styles.base, styles[variant], styles[`size_${size}`], (disabled || loading) && styles.disabled, style]}
+    <AnimatedTouchable
+      style={[
+        styles.base,
+        styles[variant],
+        styles[`size_${size}` as keyof typeof styles],
+        (disabled || loading) && styles.disabled,
+        style,
+        { transform: [{ scale }] },
+      ]}
       onPress={handlePress}
+      onPressIn={() => spring(0.96)}
+      onPressOut={() => spring(isHovered.current ? 1.02 : 1, true)}
       disabled={disabled || loading}
-      activeOpacity={0.85}
+      activeOpacity={1}
       accessibilityRole="button"
       accessibilityLabel={title}
+      {...webProps}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? Colors.black : Colors.white} size="small" />
       ) : (
-        <Text style={[styles.text, styles[`text_${variant}`], styles[`textSize_${size}`], textStyle]}>
+        <Text style={[styles.text, styles[`text_${variant}` as keyof typeof styles], styles[`textSize_${size}` as keyof typeof styles], textStyle]}>
           {title}
         </Text>
       )}
-    </TouchableOpacity>
+    </AnimatedTouchable>
   );
 }
 
@@ -55,20 +98,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primary: {
-    backgroundColor: Colors.accent,
-  },
-  secondary: {
-    backgroundColor: Colors.cardBg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  danger: {
-    backgroundColor: Colors.error,
-  },
+  primary: { backgroundColor: Colors.accent },
+  secondary: { backgroundColor: Colors.cardBg, borderWidth: 1, borderColor: Colors.border },
+  ghost: { backgroundColor: 'transparent' },
+  danger: { backgroundColor: Colors.error },
   size_sm: { paddingVertical: 8, paddingHorizontal: 16 },
   size_md: { paddingVertical: 14, paddingHorizontal: 24 },
   size_lg: { paddingVertical: 18, paddingHorizontal: 32 },

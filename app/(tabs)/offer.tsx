@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenView } from '@/components/ui/ScreenView';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Plus, Minus, CheckCircle, AlertCircle } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
@@ -127,7 +127,7 @@ export default function OfferScreen() {
 
   if (done) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenView style={styles.container} edges={['top']}>
         <View style={styles.successScreen}>
           <CheckCircle size={72} stroke={Colors.accent} />
           <Text style={styles.successTitle}>Vožnja je objavljena!</Text>
@@ -141,7 +141,7 @@ export default function OfferScreen() {
             <Button title="Na početnu" onPress={() => { handleReset(); goBack(); }} variant="ghost" size="lg" />
           </View>
         </View>
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 

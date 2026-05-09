@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenView } from '@/components/ui/ScreenView';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import {
@@ -49,7 +49,7 @@ export default function ProfileScreen() {
   const verDone = verifications.filter((v) => v.done).length;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScreenView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Hero gradient header */}
@@ -189,7 +189,7 @@ export default function ProfileScreen() {
 
         <Text style={styles.version}>Antares · v1.0.0</Text>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenView>
   );
 }
 

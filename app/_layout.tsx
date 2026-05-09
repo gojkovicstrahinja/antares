@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Platform } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 
-// Load Geist font on web
+// Load Geist font and global web styles
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   const link = document.createElement('link');
   link.rel = 'preconnect';
@@ -17,7 +17,22 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
   link2.href = 'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap';
   document.head.appendChild(link2);
   const style = document.createElement('style');
-  style.textContent = `*, *::before, *::after { font-family: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important; }`;
+  style.textContent = `
+    *, *::before, *::after { font-family: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important; }
+    /* Smooth scrolling everywhere */
+    * { scroll-behavior: smooth; }
+    /* Pointer cursor on all interactive elements */
+    [role="button"], button, [tabindex] { cursor: pointer !important; }
+    /* Remove tap highlight on mobile web */
+    * { -webkit-tap-highlight-color: transparent; }
+    /* Smooth scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+    /* Selection color */
+    ::selection { background: rgba(25,224,122,0.25); color: #fff; }
+  `;
   document.head.appendChild(style);
 }
 
@@ -55,16 +70,16 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         <AuthGate />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#050505' } }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="ride/[id]" options={{ presentation: 'card' }} />
-          <Stack.Screen name="ride/active/[id]" options={{ presentation: 'card' }} />
-          <Stack.Screen name="chat/[userId]" options={{ presentation: 'card' }} />
-          <Stack.Screen name="profile/[id]" options={{ presentation: 'card' }} />
-          <Stack.Screen name="my-rides" options={{ presentation: 'card' }} />
-          <Stack.Screen name="edit-profile" options={{ presentation: 'card' }} />
-          <Stack.Screen name="verification" options={{ presentation: 'card' }} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#050505' }, animation: 'fade' }}>
+          <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
+          <Stack.Screen name="ride/[id]" options={{ animation: 'fade' }} />
+          <Stack.Screen name="ride/active/[id]" options={{ animation: 'fade' }} />
+          <Stack.Screen name="chat/[userId]" options={{ animation: 'fade' }} />
+          <Stack.Screen name="profile/[id]" options={{ animation: 'fade' }} />
+          <Stack.Screen name="my-rides" options={{ animation: 'fade' }} />
+          <Stack.Screen name="edit-profile" options={{ animation: 'fade' }} />
+          <Stack.Screen name="verification" options={{ animation: 'fade' }} />
         </Stack>
       </SafeAreaProvider>
     </QueryClientProvider>

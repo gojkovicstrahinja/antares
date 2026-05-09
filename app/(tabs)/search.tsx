@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenView } from '@/components/ui/ScreenView';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { sr } from 'date-fns/locale';
@@ -144,7 +144,7 @@ export default function SearchScreen() {
   const canSearch = !!(polaziste || odrediste);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScreenView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backBtn}>
           <ArrowLeft size={24} stroke={Colors.white} />
@@ -372,7 +372,7 @@ export default function SearchScreen() {
           )}
         </>
       )}
-    </SafeAreaView>
+    </ScreenView>
   );
 }
 

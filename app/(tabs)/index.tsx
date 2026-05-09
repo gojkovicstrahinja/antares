@@ -80,7 +80,7 @@ export default function HomeScreen() {
               ) : (
                 <View style={styles.avatarFallback}>
                   <Text style={styles.avatarInitials}>
-                    {profile ? `${profile.ime[0]}${profile.prezime[0]}` : '?'}
+                    {profile ? `${profile.ime?.[0] ?? ''}${profile.prezime?.[0] ?? ''}`.trim() || '?' : '?'}
                   </Text>
                 </View>
               )}

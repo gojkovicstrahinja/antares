@@ -25,6 +25,11 @@ export default function LoginScreen() {
       setError('Unesite email i lozinku.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Unesite ispravnu email adresu.');
+      return;
+    }
     setLoading(true);
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);

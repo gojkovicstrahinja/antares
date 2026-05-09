@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Clock, Users, ChevronRight, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Clock, Users, ChevronRight, Plus, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useMyRides } from '@/hooks/useRides';
@@ -35,6 +35,7 @@ export default function MyRidesScreen() {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
 
@@ -43,23 +44,38 @@ export default function MyRidesScreen() {
     action: 'confirmed' | 'rejected'
   ) => {
     setActionLoading(bookingId);
-    await supabase.from('bookings').update({ status: action }).eq('id', bookingId);
+    setActionError(null);
+    const { error } = await supabase.from('bookings').update({ status: action }).eq('id', bookingId);
     setActionLoading(null);
-    queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    if (error) {
+      setActionError('Greška pri ažuriranju rezervacije. Pokušajte ponovo.');
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    }
   };
 
   const handleCancelRide = async (rideId: string) => {
     setActionLoading(rideId);
-    await supabase.from('rides').update({ status: 'otkazana' }).eq('id', rideId);
+    setActionError(null);
+    const { error } = await supabase.from('rides').update({ status: 'otkazana' }).eq('id', rideId);
     setActionLoading(null);
-    queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    if (error) {
+      setActionError('Greška pri otkazivanju vožnje. Pokušajte ponovo.');
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    }
   };
 
   const handleDeleteRide = async (rideId: string) => {
     setActionLoading(rideId);
-    await supabase.from('rides').delete().eq('id', rideId);
+    setActionError(null);
+    const { error } = await supabase.from('rides').delete().eq('id', rideId);
     setActionLoading(null);
-    queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    if (error) {
+      setActionError('Greška pri brisanju vožnje. Pokušajte ponovo.');
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    }
   };
 
   const renderRide = ({ item: ride }: { item: RideWithDriver }) => {
@@ -251,6 +267,16 @@ export default function MyRidesScreen() {
         </TouchableOpacity>
       </View>
 
+      {actionError && (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={15} stroke={Colors.error} />
+          <Text style={styles.errorBannerText}>{actionError}</Text>
+          <TouchableOpacity onPress={() => setActionError(null)} hitSlop={8}>
+            <Text style={styles.errorBannerClose}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {isLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator color={Colors.accent} size="large" />
@@ -302,6 +328,14 @@ const styles = StyleSheet.create({
   },
   offerBtnText: { color: Colors.black, fontSize: 15, fontWeight: '700' },
   list: { padding: 16, paddingBottom: 40 },
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.error + '18',
+    borderBottomWidth: 1, borderBottomColor: Colors.error,
+    paddingHorizontal: 20, paddingVertical: 10,
+  },
+  errorBannerText: { color: Colors.error, fontSize: 13, flex: 1 },
+  errorBannerClose: { color: Colors.error, fontSize: 16, paddingLeft: 8 },
 
   rideCard: {
     backgroundColor: Colors.cardBg, borderRadius: 16,

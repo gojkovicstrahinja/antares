@@ -26,6 +26,11 @@ export default function RegisterScreen() {
       setError('Sva polja su obavezna.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Unesite ispravnu email adresu.');
+      return;
+    }
     if (password.length < 8) {
       setError('Lozinka mora imati najmanje 8 karaktera.');
       return;

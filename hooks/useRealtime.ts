@@ -22,7 +22,13 @@ export function useRealtimeMessages(
           table: 'messages',
           filter: `receiver_id=eq.${senderId}`,
         },
-        (payload) => onMessage(payload.new as Message)
+        (payload) => {
+          const msg = payload.new as Message;
+          // Only forward messages from the specific conversation partner
+          if (msg.sender_id === receiverId) {
+            onMessage(msg);
+          }
+        }
       )
       .subscribe();
 

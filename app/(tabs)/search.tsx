@@ -54,11 +54,12 @@ function applyFilters(rides: RideWithDriver[], f: Filters): RideWithDriver[] {
     result = result.filter((r) => r.cena_po_osobi <= f.maxCena!);
   }
   if (f.minOcena !== null) {
-    result = result.filter((r) => r.profiles.ocena_prosek >= f.minOcena!);
+    result = result.filter((r) => (r.profiles?.ocena_prosek ?? 0) >= f.minOcena!);
   }
   if (f.vremeOd !== null) {
     result = result.filter((r) => {
-      const h = parseInt(r.vreme_polaska.slice(0, 2));
+      const h = parseInt(r.vreme_polaska?.slice(0, 2) ?? '0', 10);
+      if (isNaN(h)) return true;
       if (f.vremeOd === 'jutro') return h < 12;
       if (f.vremeOd === 'popodne') return h >= 12 && h < 18;
       return h >= 18;
@@ -67,8 +68,8 @@ function applyFilters(rides: RideWithDriver[], f: Filters): RideWithDriver[] {
 
   result.sort((a, b) => {
     if (f.sortBy === 'cena') return a.cena_po_osobi - b.cena_po_osobi;
-    if (f.sortBy === 'ocena') return b.profiles.ocena_prosek - a.profiles.ocena_prosek;
-    return a.vreme_polaska.localeCompare(b.vreme_polaska);
+    if (f.sortBy === 'ocena') return (b.profiles?.ocena_prosek ?? 0) - (a.profiles?.ocena_prosek ?? 0);
+    return (a.vreme_polaska ?? '').localeCompare(b.vreme_polaska ?? '');
   });
 
   return result;

@@ -99,7 +99,7 @@ export default function ChatScreen() {
         {otherProfile && (
           <View style={styles.headerProfile}>
             <Image
-              source={otherProfile.foto_url ?? `https://ui-avatars.com/api/?name=${otherProfile.ime}+${otherProfile.prezime}&background=1A1A1A&color=00C566`}
+              source={otherProfile.foto_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(otherProfile.ime)}+${encodeURIComponent(otherProfile.prezime)}&background=1A1A1A&color=00C566`}
               style={styles.headerAvatar}
               contentFit="cover"
             />

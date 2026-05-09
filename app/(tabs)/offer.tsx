@@ -71,10 +71,10 @@ export default function OfferScreen() {
   const canProceed = () => {
     switch (step) {
       case 1: return !!polaziste;
-      case 2: return !!odrediste;
+      case 2: return !!odrediste && odrediste !== polaziste;
       case 3: return !!datum && !!vreme;
       case 4: return mesta >= 1;
-      case 5: return !!cena && parseInt(cena) >= 0;
+      case 5: return !!cena && parseInt(cena) > 0;
       default: return true;
     }
   };
@@ -173,12 +173,20 @@ export default function OfferScreen() {
         )}
 
         {step === 2 && (
-          <CityAutocomplete value={odrediste} onSelect={setOdrediste} placeholder="Npr. Novi Sad" />
+          <>
+            <CityAutocomplete value={odrediste} onSelect={setOdrediste} placeholder="Npr. Novi Sad" />
+            {odrediste && odrediste === polaziste && (
+              <View style={styles.errorBox}>
+                <AlertCircle size={16} stroke={Colors.error} />
+                <Text style={styles.errorText}>Odredište mora biti drugačije od polazišta.</Text>
+              </View>
+            )}
+          </>
         )}
 
         {step === 3 && (
           <View style={styles.form}>
-            <DatePicker value={datum} onChange={setDatum} />
+            <DatePicker value={datum} onChange={setDatum} minDate={new Date()} />
             <TimePicker value={vreme} onChange={setVreme} />
           </View>
         )}

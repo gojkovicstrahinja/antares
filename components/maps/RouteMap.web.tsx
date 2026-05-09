@@ -135,7 +135,7 @@ L.circleMarker(fromCoords, {
   fillColor: '${accent}',
   fillOpacity: 1,
   weight: 2
-}).bindTooltip('${polaziste.replace(/'/g, "\\'")}', {
+}).bindTooltip(${JSON.stringify(polaziste)}, {
   permanent: true,
   direction: 'top',
   offset: [0, -10],
@@ -149,7 +149,7 @@ L.circleMarker(toCoords, {
   fillColor: '#fff',
   fillOpacity: 1,
   weight: 2
-}).bindTooltip('${odrediste.replace(/'/g, "\\'")}', {
+}).bindTooltip(${JSON.stringify(odrediste)}, {
   permanent: true,
   direction: 'top',
   offset: [0, -10],

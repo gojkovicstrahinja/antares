@@ -51,6 +51,7 @@ export function useRide(id: string) {
       if (error) throw error;
       return data as unknown as RideWithDriver;
     },
+    enabled: !!id,
   });
 }
 
